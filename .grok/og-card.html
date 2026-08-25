@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <style>
+    @font-face {
+      font-family: "Manrope";
+      font-weight: 500;
+      src: url("fonts/Manrope-Medium.ttf") format("truetype");
+    }
+    @font-face {
+      font-family: "Manrope";
+      font-weight: 800;
+      src: url("fonts/Manrope-ExtraBold.ttf") format("truetype");
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 1200px;
+      height: 630px;
+      overflow: hidden;
+      background: #F3F1EC;
+    }
+
+    .stage {
+      position: relative;
+      width: 1200px;
+      height: 630px;
+      background:
+        radial-gradient(ellipse 70% 80% at 50% 48%, #F7F5F1 0%, #F3F1EC 55%, #EBE8E1 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: "Manrope", ui-sans-serif, system-ui, sans-serif;
+      color: #1A1A1A;
+    }
+
+    .frame {
+      position: absolute;
+      inset: 36px;
+      border: 1px solid rgba(138, 134, 128, 0.22);
+      border-radius: 8px;
+      pointer-events: none;
+    }
+
+    .lockup {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .mark {
+      position: relative;
+      width: 196px;
+      height: 124px;
+      margin-bottom: 36px;
+    }
+
+    .orb {
+      position: absolute;
+      top: 0;
+      width: 124px;
+      height: 124px;
+      border-radius: 50%;
+    }
+
+    .orb.a {
+      left: 0;
+      background: #D4899A;
+    }
+
+    .orb.b {
+      right: 0;
+      background: #D4899A;
+      opacity: 0.58;
+    }
+
+    h1 {
+      font-weight: 800;
+      font-size: 108px;
+      letter-spacing: -0.045em;
+      line-height: 0.95;
+      color: #1A1A1A;
+    }
+
+    p {
+      margin-top: 18px;
+      font-weight: 500;
+      font-size: 22px;
+      letter-spacing: 0.18em;
+      text-transform: lowercase;
+      color: #8A8680;
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="frame"></div>
+    <div class="lockup">
+      <div class="mark" aria-hidden="true">
+        <span class="orb a"></span>
+        <span class="orb b"></span>
+      </div>
+      <h1>Двое</h1>
+      <p>пространство для пары</p>
+    </div>
+  </div>
+</body>
+</html>
