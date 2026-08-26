@@ -5,6 +5,7 @@ import { ru } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Field, Input, Sheet, Textarea } from "@/components/ui";
+import { DatePicker } from "@/components/date-picker";
 import { Page, PageHeader } from "@/components/shell";
 import { buildCalendarItems, monthCells, sameDay, upcomingItems } from "@/lib/dates";
 import { MONTHS_SHORT, WEEKDAYS } from "@/lib/i18n";
@@ -63,7 +64,6 @@ function CalendarPage() {
       setEventOpen(true);
       return;
     }
-    // birthday / anniversary — fixed, not editable
     toast("Это фиксированная дата — её нельзя изменить");
   }
 
@@ -260,7 +260,7 @@ function EventSheet({
           <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Годовщина, поездка, встреча" required />
         </Field>
         <Field label="Дата">
-          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+          <DatePicker value={date} onChange={setDate} placeholder="Выберите дату" />
         </Field>
         <Field label="Подпись">
           <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="4 года вместе" rows={2} />
@@ -362,7 +362,12 @@ function TaskSheet({
           </div>
         </Field>
         <Field label="Срок — попадёт в календарь">
-          <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          <DatePicker
+            value={dueDate}
+            onChange={setDueDate}
+            placeholder="Без срока"
+            allowClear
+          />
         </Field>
         <Button type="submit" className="mt-2">
           Сохранить
