@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
-import { CheckCircle2, ChevronRight, Lock, Mail } from "lucide-react";
+import { CheckCircle2, ChevronRight, Folder, Lock, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, Field, Input, Sheet, Textarea } from "@/components/ui";
 import { Page, PageHeader } from "@/components/shell";
@@ -22,6 +22,7 @@ import { cn, todayISO } from "@/lib/utils";
 export const Route = createFileRoute("/us")({ component: UsPage });
 
 function UsPage() {
+  const navigate = useNavigate();
   const me = useMe();
   const partners = useAppStore((s) => s.partners);
   const startedAt = useAppStore((s) => s.startedAt);
@@ -72,6 +73,20 @@ function UsPage() {
             <span className="block text-[17px] font-bold">Голосование</span>
             <span className="block text-[13px] text-muted">спросить партнёра тайно</span>
           </span>
+        </Card>
+
+        <Card
+          onClick={() => navigate({ to: "/docs" })}
+          className="flex items-center gap-3 px-4 py-4"
+        >
+          <span className="flex size-10 items-center justify-center rounded-full bg-chip text-ink">
+            <Folder className="size-5" strokeWidth={1.7} />
+          </span>
+          <span className="min-w-0 flex-1 text-left">
+            <span className="block text-[17px] font-bold">Документы</span>
+            <span className="block text-[13px] text-muted">билеты, страховки, карты</span>
+          </span>
+          <ChevronRight className="size-4 text-faint" />
         </Card>
 
         <div className="grid grid-cols-2 overflow-hidden rounded-card bg-surface shadow-card">
