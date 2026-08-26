@@ -12,9 +12,9 @@ import { otherId, useAppStore, useMe, usePartner } from "@/lib/store";
 import type { CalendarItem, TaskAssignee, TaskItem } from "@/lib/types";
 import { capitalize, cn, isoDate, parseISODate, todayISO } from "@/lib/utils";
 
-/** Old /calendar links land on the combined Дела tab. */
+/** Old /calendar links open the combined Дела tab. */
 export const Route = createFileRoute("/calendar")({
-  component: () => <Navigate to="/" search={{ view: "calendar" }} replace />,
+  component: () => <Navigate to="/" replace />,
 });
 
 export function CalendarPanel() {
