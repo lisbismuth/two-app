@@ -27,7 +27,7 @@ const partners: Record<PartnerId, Partner> = {
   },
   b: {
     id: "b",
-    name: "Артём",
+    name: "Андрей",
     gender: "male",
     birthday: "1997-07-08",
     color: "#7A9E8A",

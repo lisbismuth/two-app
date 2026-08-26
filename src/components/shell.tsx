@@ -4,6 +4,7 @@ import { CalendarDays, Folder, Gift, Heart, ListTodo, Plus } from "lucide-react"
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAppStore, useMe } from "@/lib/store";
+import { useServerSync } from "@/lib/sync/client";
 import { Setup } from "@/components/setup";
 import { PartnerSwitcher } from "@/components/partners";
 
@@ -38,6 +39,7 @@ function Splash() {
 
 export function AppShell() {
   const setupComplete = useAppStore((s) => s.setupComplete);
+  useServerSync();
 
   return (
     <HydrationGate>

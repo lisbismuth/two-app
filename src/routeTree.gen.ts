@@ -14,6 +14,7 @@ import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as UsRouteImport } from './routes/us'
 import { Route as WishesRouteImport } from './routes/wishes'
+import { Route as ApiStateRouteImport } from './routes/api/state'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,6 +41,11 @@ const WishesRoute = WishesRouteImport.update({
   path: '/wishes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiStateRoute = ApiStateRouteImport.update({
+  id: '/api/state',
+  path: '/api/state',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/docs': typeof DocsRoute
   '/us': typeof UsRoute
   '/wishes': typeof WishesRoute
+  '/api/state': typeof ApiStateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsRoute
   '/us': typeof UsRoute
   '/wishes': typeof WishesRoute
+  '/api/state': typeof ApiStateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +70,15 @@ export interface FileRoutesById {
   '/docs': typeof DocsRoute
   '/us': typeof UsRoute
   '/wishes': typeof WishesRoute
+  '/api/state': typeof ApiStateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/calendar' | '/docs' | '/us' | '/wishes'
+  fullPaths: '/' | '/calendar' | '/docs' | '/us' | '/wishes' | '/api/state'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/calendar' | '/docs' | '/us' | '/wishes'
-  id: '__root__' | '/' | '/calendar' | '/docs' | '/us' | '/wishes'
+  to: '/' | '/calendar' | '/docs' | '/us' | '/wishes' | '/api/state'
+  id:
+    '__root__' | '/' | '/calendar' | '/docs' | '/us' | '/wishes' | '/api/state'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -77,6 +87,7 @@ export interface RootRouteChildren {
   DocsRoute: typeof DocsRoute
   UsRoute: typeof UsRoute
   WishesRoute: typeof WishesRoute
+  ApiStateRoute: typeof ApiStateRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -116,6 +127,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WishesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/state': {
+      id: '/api/state'
+      path: '/api/state'
+      fullPath: '/api/state'
+      preLoaderRoute: typeof ApiStateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -125,6 +143,7 @@ const rootRouteChildren: RootRouteChildren = {
   DocsRoute: DocsRoute,
   UsRoute: UsRoute,
   WishesRoute: WishesRoute,
+  ApiStateRoute: ApiStateRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
