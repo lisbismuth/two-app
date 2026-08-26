@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Folder, Gift, Heart, ListTodo, Plus, Wallet } from "lucide-react";
+import { CreditCard, Gift, Heart, ListTodo, Plus, Wallet } from "lucide-react";
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAppStore, useMe } from "@/lib/store";
@@ -16,9 +16,13 @@ import { partnerIdFromEmail } from "@/lib/partners-auth";
 const TABS = [
   { to: "/", label: "Дела", icon: ListTodo, end: true },
   { to: "/expenses", label: "Траты", icon: Wallet, end: false },
+  { to: "/docs", label: "Карты", icon: CreditCard, end: false },
   { to: "/wishes", label: "Хотелки", icon: Gift, end: false },
   { to: "/us", label: "Мы", icon: Heart, end: false },
 ] as const;
+
+/** Height reserved under content so fixed tab bar doesn't cover the last items. */
+const TAB_BAR_PAD = "pb-[calc(4.25rem+env(safe-area-inset-bottom))]";
 
 export function HydrationGate({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
@@ -91,7 +95,9 @@ export function AppShell() {
         <div className="relative flex min-h-dvh w-full max-w-lg flex-col overflow-x-hidden bg-bg sm:shadow-float">
           {setupComplete ? (
             <>
-              <Outlet />
+              <div className={cn("flex flex-1 flex-col", TAB_BAR_PAD)}>
+                <Outlet />
+              </div>
               <TabBar />
             </>
           ) : (
@@ -115,8 +121,10 @@ function TabBar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <nav className="sticky bottom-0 z-30 mt-auto border-t border-line bg-bg pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1.5">
-      <ul className="grid grid-cols-4">
+    <nav
+      className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-lg border-t border-line bg-bg/95 backdrop-blur-md pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1.5"
+    >
+      <ul className="grid grid-cols-5">
         {TABS.map((tab) => {
           const active = tab.end
             ? pathname === "/" || pathname.startsWith("/calendar")
@@ -227,5 +235,3 @@ export function AccountRow() {
     </div>
   );
 }
-
-export const DOCS_TAB = { to: "/docs" as const, label: "Документы", icon: Folder };
