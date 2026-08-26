@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { CalendarDays, Folder, Gift, Heart, ListTodo, Plus, Wallet } from "lucide-react";
+import { Folder, Gift, Heart, ListTodo, Plus, Wallet } from "lucide-react";
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAppStore, useMe } from "@/lib/store";
@@ -14,8 +14,7 @@ import { SIGN_IN_PATH } from "@/lib/auth/gates";
 import { partnerIdFromEmail } from "@/lib/partners-auth";
 
 const TABS = [
-  { to: "/", label: "Задачи", icon: ListTodo, end: true },
-  { to: "/calendar", label: "Календарь", icon: CalendarDays, end: false },
+  { to: "/", label: "Дела", icon: ListTodo, end: true },
   { to: "/expenses", label: "Траты", icon: Wallet, end: false },
   { to: "/wishes", label: "Хотелки", icon: Gift, end: false },
   { to: "/us", label: "Мы", icon: Heart, end: false },
@@ -42,7 +41,6 @@ function Splash() {
   );
 }
 
-/** Keep in-app partner (Лиза / Андрей) in sync with the signed-in email. */
 function PartnerFromAuth() {
   const { user } = useCurrentUserState();
   const currentId = useAppStore((s) => s.currentId);
@@ -65,7 +63,6 @@ export function AppShell() {
   const setupComplete = useAppStore((s) => s.setupComplete);
   useServerSync();
 
-  // Login page is outside the app chrome and auth gate.
   if (isLogin) {
     return (
       <>
@@ -82,7 +79,6 @@ export function AppShell() {
     );
   }
 
-  // Require sign-in when auth is enabled.
   if (authEnabled) {
     if (isPending) return <Splash />;
     if (!user) return <RedirectToSignIn />;
@@ -120,9 +116,11 @@ function TabBar() {
 
   return (
     <nav className="sticky bottom-0 z-30 mt-auto border-t border-line bg-bg pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1.5">
-      <ul className="grid grid-cols-5">
+      <ul className="grid grid-cols-4">
         {TABS.map((tab) => {
-          const active = tab.end ? pathname === "/" : pathname.startsWith(tab.to);
+          const active = tab.end
+            ? pathname === "/" || pathname.startsWith("/calendar")
+            : pathname.startsWith(tab.to);
           const Icon = tab.icon;
           return (
             <li key={tab.to}>
@@ -221,7 +219,6 @@ function HeaderAvatar() {
   );
 }
 
-/** Compact account chip for the partner sheet / settings. */
 export function AccountRow() {
   if (!authEnabled) return null;
   return (
@@ -231,5 +228,4 @@ export function AccountRow() {
   );
 }
 
-/** Re-export so Us page can deep-link to docs without a tab. */
 export const DOCS_TAB = { to: "/docs" as const, label: "Документы", icon: Folder };
