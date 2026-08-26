@@ -11,7 +11,7 @@ import type { DocItem } from "@/lib/types";
 export const Route = createFileRoute("/docs")({ component: DocsPage });
 
 function DocsPage() {
-  const [tab, setTab] = useState<"doc" | "card">("doc");
+  const [tab, setTab] = useState<"doc" | "card">("card");
   const [viewer, setViewer] = useState<DocItem | null>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -38,13 +38,13 @@ function DocsPage() {
 
   return (
     <Page>
-      <PageHeader title="Документы" onAdd={() => fileRef.current?.click()} />
+      <PageHeader title="Карты" onAdd={() => fileRef.current?.click()} />
       <Segmented
         value={tab}
         onChange={setTab}
         options={[
-          { value: "doc", label: "Документы" },
           { value: "card", label: "Карты" },
+          { value: "doc", label: "Документы" },
         ]}
       />
 
@@ -67,8 +67,12 @@ function DocsPage() {
       {visible.length === 0 ? (
         <EmptyState
           icon={<FileGlyph />}
-          title={tab === "card" ? "Карты будут здесь" : "Здесь будут билеты и страховки"}
-          text="Всё, что добавите, сразу ляжет на устройство и откроется без интернета."
+          title={tab === "card" ? "Скидочные карты" : "Билеты и страховки"}
+          text={
+            tab === "card"
+              ? "Сфотографируйте карту — откроется без интернета на кассе."
+              : "Всё, что добавите, сразу ляжет на устройство и откроется без интернета."
+          }
           action={<Button onClick={() => cameraRef.current?.click()}>Сфотографировать</Button>}
           secondary={
             <Button variant="secondary" onClick={() => fileRef.current?.click()}>
