@@ -7,6 +7,11 @@ import { useAppStore, useMe } from "@/lib/store";
 import { useServerSync } from "@/lib/sync/client";
 import { Setup } from "@/components/setup";
 import { PartnerSwitcher } from "@/components/partners";
+import { authEnabled } from "@/lib/auth/client";
+import { RedirectToSignIn, UserButton } from "@/lib/auth/gates";
+import { useCurrentUserState } from "@/lib/auth/use-current-user";
+import { SIGN_IN_PATH } from "@/lib/auth/gates";
+import { partnerIdFromEmail } from "@/lib/partners-auth";
 
 const TABS = [
   { to: "/", label: "Задачи", icon: ListTodo, end: true },
@@ -37,12 +42,55 @@ function Splash() {
   );
 }
 
+/** Keep in-app partner (Лиза / Андрей) in sync with the signed-in email. */
+function PartnerFromAuth() {
+  const { user } = useCurrentUserState();
+  const currentId = useAppStore((s) => s.currentId);
+  const setCurrentId = useAppStore((s) => s.setCurrentId);
+
+  useEffect(() => {
+    const partnerId = partnerIdFromEmail(user?.primaryEmail);
+    if (partnerId && partnerId !== currentId) {
+      setCurrentId(partnerId);
+    }
+  }, [user?.primaryEmail, currentId, setCurrentId]);
+
+  return null;
+}
+
 export function AppShell() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isLogin = pathname === SIGN_IN_PATH || pathname.startsWith("/login");
+  const { user, isPending } = useCurrentUserState();
   const setupComplete = useAppStore((s) => s.setupComplete);
   useServerSync();
 
+  // Login page is outside the app chrome and auth gate.
+  if (isLogin) {
+    return (
+      <>
+        <Outlet />
+        <Toaster
+          position="top-center"
+          offset={16}
+          toastOptions={{
+            className:
+              "!bg-ink !text-on-ink !rounded-full !px-4 !py-3 !font-[Manrope] !text-sm !shadow-float",
+          }}
+        />
+      </>
+    );
+  }
+
+  // Require sign-in when auth is enabled.
+  if (authEnabled) {
+    if (isPending) return <Splash />;
+    if (!user) return <RedirectToSignIn />;
+  }
+
   return (
     <HydrationGate>
+      <PartnerFromAuth />
       <div className="flex min-h-dvh justify-center bg-bg-warm">
         <div className="relative flex min-h-dvh w-full max-w-lg flex-col overflow-x-hidden bg-bg sm:shadow-float">
           {setupComplete ? (
@@ -170,5 +218,15 @@ function HeaderAvatar() {
       />
       <PartnerSwitcher open={open} onOpenChange={setOpen} />
     </>
+  );
+}
+
+/** Compact account chip for the partner sheet / settings. */
+export function AccountRow() {
+  if (!authEnabled) return null;
+  return (
+    <div className="rounded-card bg-chip px-3 py-3">
+      <UserButton />
+    </div>
   );
 }

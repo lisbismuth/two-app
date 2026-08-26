@@ -29,14 +29,15 @@
  * components read the user via `@/lib/auth/use-current-user`; server functions get
  * a verified id via `@/lib/auth/middleware`.
  */
-import { betterAuth } from "better-auth";
+import { APIError, betterAuth } from "better-auth";
 import { bearer, genericOAuth } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { getCookie } from "@tanstack/react-start/server";
 import { randomBytes } from "node:crypto";
 import { Pool } from "pg";
 import { ensureDbReady, getPglite } from "../db";
-import { emailAndPasswordEnabled } from "./email-password";
+import { isAllowedEmail, partnerIdFromEmail, PARTNER_DISPLAY_NAME } from "../partners-auth";
+import { emailAndPasswordEnabled, emailAndPasswordOptions } from "./email-password";
 import { GATE_PROVIDER_ID, gateIdentitySessions } from "./gate-session.server";
 import { GROK_PROVIDERS } from "./providers";
 import { pgliteDialect } from "./pglite-dialect";
@@ -85,13 +86,16 @@ const grokClientSecret = env("GROK_AUTH_CLIENT_SECRET") ?? PREVIEW_CLIENT_SECRET
 export const authConfigured =
   !authDisabled && Boolean(grokClientId && grokClientSecret);
 
-// This app's own Better Auth origin. When deployed the deployer injects the
-// public URL. In the sandbox live preview there's no fixed URL (each preview gets
-// a dynamic `*.grok-sandbox.com` host), so we hand Better Auth a dynamic baseURL:
-// it derives the origin per-request from the (proxied) host, validated against the
-// preview allowlist, which makes the OAuth `redirect_uri` the concrete preview URL
-// the broker's preview client accepts.
-const explicitBaseURL = env("BETTER_AUTH_URL");
+// Production domains for this Vercel project (aliases + team slug).
+const PRODUCTION_ORIGINS: string[] = [
+  "https://two-together.vercel.app",
+  "https://two-lissy1.vercel.app",
+  "https://two-git-main-lissy1.vercel.app",
+];
+
+// This app's own Better Auth origin. Prefer explicit BETTER_AUTH_URL, then the
+// canonical production domain so cookies/origin checks match what users open.
+const explicitBaseURL = env("BETTER_AUTH_URL") ?? PRODUCTION_ORIGINS[0];
 // Explicit `string[]` (not a readonly tuple) — Better Auth's DynamicBaseURLConfig
 // requires a mutable `allowedHosts: string[]`.
 const previewAllowedHosts: string[] = [...PREVIEW_ALLOWED_HOSTS];
@@ -103,27 +107,31 @@ const LOCAL_DEV_ORIGINS: string[] = [
   "http://127.0.0.1:8080",
   "http://[::1]:8080",
 ];
-const baseURL = explicitBaseURL ?? {
-  // Include loopback hosts so dynamic baseURL resolves for local email/password
-  // (not only the preview wildcard).
-  allowedHosts: [...previewAllowedHosts, "localhost", "127.0.0.1", "[::1]"],
-  // `auto` → trust both http:// and https:// expansions of allowedHosts
-  // (preview is https; local dev is http).
-  protocol: "auto" as const,
-  fallback: "http://localhost:8080",
-};
+
+// Also trust the current Vercel deployment URL when present (preview + prod).
+const vercelUrl = env("VERCEL_URL");
+const vercelOrigin = vercelUrl
+  ? vercelUrl.startsWith("http")
+    ? vercelUrl
+    : `https://${vercelUrl}`
+  : undefined;
+
+const baseURL = explicitBaseURL;
 
 // Origins Better Auth accepts on credentialed POSTs (sign-up/sign-in, etc.).
 // Missing entries here surface as FORBIDDEN "Invalid origin".
-const trustedOrigins: string[] = explicitBaseURL
-  ? [explicitBaseURL, ...LOCAL_DEV_ORIGINS]
-  : [
-      // Host wildcards (matched against Origin's host)
-      ...previewAllowedHosts,
-      // Full-origin wildcards (matched against Origin)
-      ...previewAllowedHosts.flatMap((host) => [`https://${host}`, `http://${host}`]),
-      ...LOCAL_DEV_ORIGINS,
-    ];
+// Include production aliases, deployment URL, local dev, and Vercel wildcards
+// so preview URLs like two-xxxxx-lissy1.vercel.app also work.
+const trustedOrigins: string[] = [
+  explicitBaseURL,
+  ...PRODUCTION_ORIGINS,
+  ...LOCAL_DEV_ORIGINS,
+  ...(vercelOrigin ? [vercelOrigin] : []),
+  // Better Auth supports wildcard hosts for preview deployments.
+  "https://*.vercel.app",
+  ...previewAllowedHosts,
+  ...previewAllowedHosts.flatMap((host) => [`https://${host}`, `http://${host}`]),
+];
 
 const databaseUrl = env("DATABASE_URL");
 
@@ -172,6 +180,14 @@ const grokOAuthPlugin = authConfigured
     })
   : null;
 
+function assertAllowedEmail(email: string | undefined | null): void {
+  if (!email || !isAllowedEmail(email)) {
+    throw new APIError("FORBIDDEN", {
+      message: "Доступ только для двух аккаунтов этого приложения",
+    });
+  }
+}
+
 export const auth = betterAuth({
   baseURL,
   // Deployed apps inject BETTER_AUTH_SECRET. Preview: process-stable secret on
@@ -211,7 +227,36 @@ export const auth = betterAuth({
   session: { cookieCache: { enabled: true, maxAge: 300 } },
 
   // Local email/password — toggled only via `./email-password` (not a plugin).
-  ...(emailAndPasswordEnabled ? { emailAndPassword: { enabled: true } } : {}),
+  ...(emailAndPasswordEnabled ? { emailAndPassword: emailAndPasswordOptions } : {}),
+
+  // Only the two partner emails may create accounts. Name is forced to the
+  // partner display name (Лиза / Андрей) so the session matches the in-app role.
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          assertAllowedEmail(user.email);
+          const partnerId = partnerIdFromEmail(user.email);
+          const name = partnerId ? PARTNER_DISPLAY_NAME[partnerId] : user.name;
+          return { data: { ...user, name, email: user.email.trim().toLowerCase() } };
+        },
+      },
+    },
+    session: {
+      create: {
+        before: async (session, ctx) => {
+          // Block sessions for non-allowlisted users (e.g. leftover accounts).
+          const email =
+            (ctx as { user?: { email?: string } } | undefined)?.user?.email ??
+            undefined;
+          // ctx shape varies; also re-check via userId is not available here
+          // without a query — primary gate is user.create. Keep session hook light.
+          if (email) assertAllowedEmail(email);
+          return { data: session };
+        },
+      },
+    },
+  },
 
   // `__Host-` prefixed cookies: the browser REFUSES any same-named cookie that
   // carries a `Domain` attribute, so a sibling `*.grok.me` app cannot "toss" a

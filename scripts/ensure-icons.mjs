@@ -1,0 +1,40 @@
+#!/usr/bin/env node
+/**
+ * Writes PNG icons into public/ before build.
+ * iOS home-screen requires real PNG apple-touch-icon (SVG is ignored).
+ */
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const publicDir = join(root, "public");
+const grokDir = join(publicDir, "__grok");
+
+mkdirSync(grokDir, { recursive: true });
+
+/** Brand icons: cream bg + two rose circles (matches favicon.svg). */
+const ICONS = {
+  "apple-touch-icon.png":
+    "iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAYAAAA9zQYyAAAC9klEQVR42u3dMUoDYRSF0UmwtXEDgq2NG3ATrsIluQo34QZsbAX7IIQsIFaChYUOk8z77zunD4zx8/oEIZvDfnecIMTWW4CgQdAgaBA0ggZBg6BB0CBoBA2CBkGDoEHQCBoEDYIGQYOgETQIGgQNggZBI2gQNAgaBA2CRtAgaBA0CBoEjaBB0CBoEDSCBkGDoEHQIGgEDeO76PqFfzw9//s1148Pqzzr58vrv19zdX/X8vu6Oex3R/HOt3Tkc+IVeYOgTxnx0nGfMuJucccFvUbIc8NeI+T0sCOCrhDxX+OuEHFy3Fsxn+/5Ksc8wvNFL3T1kH9zeXszzLOOutbDBT1iyMJ2csTGPE3TdHh7H+ZZRztDtmIWdVLU5U+OtJCdII0XukPM1rpJ0F1iFnWDoLvFLOrgoLvGLOoGNzQMHXT3dbbSQUGLWdQxQYtZ1DFBi1nU/iiEikFbZyttoaFi0NbZSltoqBi0dbbSFhoqBm2drbSFhopBW2crbaFB0AgaBO1+dkfXuqMtNBYaBA0pQbuf3dHnuqMtNBYaBA2CBkEjaBA0CBoEDYJG0CBoEDSMG/T144N3+gR8YKeFxkKDoCE7aHe0+9lCg6ARNAjaHe1+rnU/W2gstJW2zlXX2UJjoa20da66zhYaC22lrXPVdbbQWGgrbZ2rrrOFxkJbaetcdZ3LLLSoxRx3cohazHE3tKjF7I9CqBx095W2zoEL3TVqMQefHN2iFnODG7pL1GJezuaw3x1HeCMTP7xTyM0WOnmtxdw86KSoxezkiDhBhCzoiLC/f7Oc6wPcO4Y85Mkx4hny8/mqxzJ6zBELXXGx//pDVmGxEyKODnrNsOf+tlgj7LSQ44M+V9xLnzynjDs14nZBLxX5Wvf6nMg7xCto4vl/aAQNggZBg6ARNAgaBA2CBkEjaBA0CBoEDYJG0CBoEDQIGgSNoEHQIGgQNAgaQYOgQdAgaBA0ggZBg6BB0CBoBA2CBkGDoBE0CBoEDYIGQSNoCPAFaiIuWreNcCAAAAAASUVORK5CYII=",
+  "icon-192.png":
+    "iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABS3GwHAAADOUlEQVR42u3bMWoyQRjHYQ1pbbyAYGvjBbyEp/BIniKX8AI2aQP2IogHMEVIowiirjM7/+fpQ5b93t+8s4FveDruzwMI9eEVIAAQAAgABAACAAGAAEAAIAAQAAgABAACAAGAAEAAIAAQAAgABAACAAGAAEAAIAAQAAgABAACAAGAAEAAIAAQAAgABAACAAGAAEAAIAAQAAgABAACAAGAAODKp1fwZ7f+eujnJqtl0ec+bLYP/dx4MfePPhgMhqfj/mzYX6urKB4ddlEIoP",
+};
+
+// Full payloads written below as complete icons from generator
+const FULL = {
+  "apple-touch-icon.png": process.env.ICON_B64_180,
+};
+
+// Inline complete base64 (generated offline from brand design)
+const FILES = {
+  [join(publicDir, "apple-touch-icon.png")]:
+    "iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAYAAAA9zQYyAAAC9klEQVR42u3dMUoDYRSF0UmwtXEDgq2NG3ATrsIluQo34QZsbAX7IIQsIFaChYUOk8z77zunD4zx8/oEIZvDfnecIMTWW4CgQdAgaBA0ggZBg6BB0CBoBA2CBkGDoEHQCBoEDYIGQYOgETQIGgQNggZBI2gQNAgaBA2CRtAgaBA0CBoEjaBB0CBoEDSCBkGDoEHQIGgEDeO76PqFfzw9//s1148Pqzzr58vrv19zdX/X8vu6Oex3R/HOt3Tkc+IVeYOgTxnx0nGfMuJucccFvUbIc8NeI+T0sCOCrhDxX+OuEHFy3Fsxn+/5Ksc8wvNFL3T1kH9zeXszzLOOutbDBT1iyMJ2csTGPE3TdHh7H+ZZRztDtmIWdVLU5U+OtJCdII0XukPM1rpJ0F1iFnWDoLvFLOrgoLvGLOoGNzQMHXT3dbbSQUGLWdQxQYtZ1DFBi1nU/iiEikFbZyttoaFi0NbZSltoqBi0dbbSFhoqBm2drbSFhopBW2crbaFB0AgaBO1+dkfXuqMtNBYaBA0pQbuf3dHnuqMtNBYaBA2CBkEjaBA0CBoEDYJG0CBoEDSMG/T144N3+gR8YKeFxkKDoCE7aHe0+9lCg6ARNAjaHe1+rnU/W2gstJW2zlXX2UJjoa20da66zhYaC22lrXPVdbbQWGgrbZ2rrrOFxkJbaetcdZ3LLLSoxRx3cohazHE3tKjF7I9CqBx095W2zoEL3TVqMQefHN2iFnODG7pL1GJezuaw3x1HeCMTP7xTyM0WOnmtxdw86KSoxezkiDhBhCzoiLC/f7Oc6wPcO4Y85Mkx4hny8/mqxzJ6zBELXXGx//pDVmGxEyKODnrNsOf+tlgj7LSQ44M+V9xLnzynjDs14nZBLxX5Wvf6nMg7xCto4vl/aAQNggZBg6ARNAgaBA2CBkEjaBA0CBoEDYJG0CBoEDQIGgSNoEHQIGgQNAgaQYOgQdAgaBA0ggZBg6BB0CBoBA2CBkGDoBE0CBoEDYIGQSNoCPAFaiIuWreNcCAAAAAASUVORK5CYII=",
+  [join(grokDir, "icon-180.png")]:
+    "iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAYAAAA9zQYyAAAC9klEQVR42u3dMUoDYRSF0UmwtXEDgq2NG3ATrsIluQo34QZsbAX7IIQsIFaChYUOk8z77zunD4zx8/oEIZvDfnecIMTWW4CgQdAgaBA0ggZBg6BB0CBoBA2CBkGDoEHQCBoEDYIGQYOgETQIGgQNggZBI2gQNAgaBA2CRtAgaBA0CBoEjaBB0CBoEDSCBkGDoEHQIGgEDeO76PqFfzw9//s1148Pqzzr58vrv19zdX/X8vu6Oex3R/HOt3Tkc+IVeYOgTxnx0nGfMuJucccFvUbIc8NeI+T0sCOCrhDxX+OuEHFy3Fsxn+/5Ksc8wvNFL3T1kH9zeXszzLOOutbDBT1iyMJ2csTGPE3TdHh7H+ZZRztDtmIWdVLU5U+OtJCdII0XukPM1rpJ0F1iFnWDoLvFLOrgoLvGLOoGNzQMHXT3dbbSQUGLWdQxQYtZ1DFBi1nU/iiEikFbZyttoaFi0NbZSltoqBi0dbbSFhoqBm2drbSFhopBW2crbaFB0AgaBO1+dkfXuqMtNBYaBA0pQbuf3dHnuqMtNBYaBA2CBkEjaBA0CBoEDYJG0CBoEDSMG/T144N3+gR8YKeFxkKDoCE7aHe0+9lCg6ARNAjaHe1+rnU/W2gstJW2zlXX2UJjoa20da66zhYaC22lrXPVdbbQWGgrbZ2rrrOFxkJbaetcdZ3LLLSoxRx3cohazHE3tKjF7I9CqBx095W2zoEL3TVqMQefHN2iFnODG7pL1GJezuaw3x1HeCMTP7xTyM0WOnmtxdw86KSoxezkiDhBhCzoiLC/f7Oc6wPcO4Y85Mkx4hny8/mqxzJ6zBELXXGx//pDVmGxEyKODnrNsOf+tlgj7LSQ44M+V9xLnzynjDs14nZBLxX5Wvf6nMg7xCto4vl/aAQNggZBg6ARNAgaBA2CBkEjaBA0CBoEDYJG0CBoEDQIGgSNoEHQIGgQNAgaQYOgQdAgaBA0ggZBg6BB0CBoBA2CBkGDoBE0CBoEDYIGQSNoCPAFaiIuWreNcCAAAAAASUVORK5CYII=",
+};
+
+for (const [path, b64] of Object.entries(FILES)) {
+  writeFileSync(path, Buffer.from(b64, "base64"));
+  console.log("[icons]", path);
+}

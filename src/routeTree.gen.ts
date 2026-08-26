@@ -12,9 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as DocsRouteImport } from './routes/docs'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as UsRouteImport } from './routes/us'
 import { Route as WishesRouteImport } from './routes/wishes'
 import { Route as ApiStateRouteImport } from './routes/api/state'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -29,6 +31,11 @@ const CalendarRoute = CalendarRouteImport.update({
 const DocsRoute = DocsRouteImport.update({
   id: '/docs',
   path: '/docs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UsRoute = UsRouteImport.update({
@@ -46,48 +53,85 @@ const ApiStateRoute = ApiStateRouteImport.update({
   path: '/api/state',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
   '/docs': typeof DocsRoute
+  '/login': typeof LoginRoute
   '/us': typeof UsRoute
   '/wishes': typeof WishesRoute
   '/api/state': typeof ApiStateRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
   '/docs': typeof DocsRoute
+  '/login': typeof LoginRoute
   '/us': typeof UsRoute
   '/wishes': typeof WishesRoute
   '/api/state': typeof ApiStateRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
   '/docs': typeof DocsRoute
+  '/login': typeof LoginRoute
   '/us': typeof UsRoute
   '/wishes': typeof WishesRoute
   '/api/state': typeof ApiStateRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/calendar' | '/docs' | '/us' | '/wishes' | '/api/state'
+  fullPaths:
+    | '/'
+    | '/calendar'
+    | '/docs'
+    | '/login'
+    | '/us'
+    | '/wishes'
+    | '/api/state'
+    | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/calendar' | '/docs' | '/us' | '/wishes' | '/api/state'
+  to:
+    | '/'
+    | '/calendar'
+    | '/docs'
+    | '/login'
+    | '/us'
+    | '/wishes'
+    | '/api/state'
+    | '/api/auth/$'
   id:
-    '__root__' | '/' | '/calendar' | '/docs' | '/us' | '/wishes' | '/api/state'
+    | '__root__'
+    | '/'
+    | '/calendar'
+    | '/docs'
+    | '/login'
+    | '/us'
+    | '/wishes'
+    | '/api/state'
+    | '/api/auth/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CalendarRoute: typeof CalendarRoute
   DocsRoute: typeof DocsRoute
+  LoginRoute: typeof LoginRoute
   UsRoute: typeof UsRoute
   WishesRoute: typeof WishesRoute
   ApiStateRoute: typeof ApiStateRoute
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -113,6 +157,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/us': {
       id: '/us'
       path: '/us'
@@ -134,6 +185,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiStateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -141,9 +199,11 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CalendarRoute: CalendarRoute,
   DocsRoute: DocsRoute,
+  LoginRoute: LoginRoute,
   UsRoute: UsRoute,
   WishesRoute: WishesRoute,
   ApiStateRoute: ApiStateRoute,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

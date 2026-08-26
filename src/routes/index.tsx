@@ -6,6 +6,7 @@ import { Check } from "lucide-react";
 
 import { toast } from "sonner";
 import { Button, EmptyState, Field, Input, Sheet, Textarea } from "@/components/ui";
+import { DatePicker } from "@/components/date-picker";
 import { Page, PageHeader } from "@/components/shell";
 import { otherId, useAppStore, useMe, usePartner } from "@/lib/store";
 import type { TaskAssignee, TaskItem } from "@/lib/types";
@@ -247,7 +248,13 @@ function TaskSheet({
           </div>
         </Field>
         <Field label="Срок — попадёт в календарь">
-          <Input type="date" value={dueDate} min={todayISO()} onChange={(e) => setDueDate(e.target.value)} />
+          <DatePicker
+            value={dueDate}
+            onChange={setDueDate}
+            min={todayISO()}
+            placeholder="Без срока"
+            allowClear
+          />
         </Field>
         <Button type="submit" className="mt-2">
           {editing ? "Сохранить" : "Добавить задачу"}
