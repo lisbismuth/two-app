@@ -13,7 +13,7 @@ import {
   categoryStats,
   normalizeCategory,
 } from "@/lib/expense-categories";
-import { balanceText, formatRub, parseAmountInput } from "@/lib/money";
+import { balanceText, formatRub, netBalance, parseAmountInput } from "@/lib/money";
 import { useAppStore } from "@/lib/store";
 import type { ExpenseCategory, ExpenseItem, PartnerId } from "@/lib/types";
 import { cn, todayISO } from "@/lib/utils";
@@ -23,21 +23,23 @@ export const Route = createFileRoute("/expenses")({ component: ExpensesPage });
 function ExpensesPage() {
   const expenses = useAppStore((s) => s.expenses);
   const partners = useAppStore((s) => s.partners);
+  const settleBalance = useAppStore((s) => s.settleBalance);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ExpenseItem | null>(null);
 
   const sorted = useMemo(
     () =>
       [...expenses].sort(
-        (a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt),
+        (a, b) =>
+          Number(!!a.settled) - Number(!!b.settled) ||
+          b.date.localeCompare(a.date) ||
+          b.createdAt.localeCompare(a.createdAt),
       ),
     [expenses],
   );
 
-  const bal = balanceText(
-    expenses.reduce((acc, e) => acc + (e.paidBy === "a" ? e.amount / 2 : -e.amount / 2), 0),
-    { a: partners.a.name, b: partners.b.name },
-  );
+  const balance = netBalance(expenses);
+  const bal = balanceText(balance, { a: partners.a.name, b: partners.b.name });
 
   const total = expenses.reduce((s, e) => s + e.amount, 0);
   const stats = useMemo(() => categoryStats(expenses), [expenses]);
@@ -60,6 +62,18 @@ function ExpensesPage() {
         <p className="mt-2 text-[14px] text-muted">{bal.detail}</p>
         {total > 0 ? (
           <p className="mt-3 text-[13px] text-faint">Всего общих покупок: {formatRub(total)}</p>
+        ) : null}
+        {!bal.even ? (
+          <Button
+            className="mt-4"
+            variant="secondary"
+            onClick={() => {
+              settleBalance();
+              toast("Долг погашен — баланс обнулён");
+            }}
+          >
+            Погасили
+          </Button>
         ) : null}
       </div>
 
@@ -136,13 +150,17 @@ function ExpenseRow({ expense, onEdit }: { expense: ExpenseItem; onEdit: () => v
   const payer = partners[expense.paidBy];
   const half = expense.amount / 2;
   const cat = categoryLabel(normalizeCategory(expense.category));
+  const settled = !!expense.settled;
 
   return (
     <li>
       <button
         type="button"
         onClick={onEdit}
-        className="flex w-full items-center gap-3 rounded-card bg-surface px-4 py-3.5 text-left shadow-card transition-transform duration-150 active:scale-[0.98]"
+        className={cn(
+          "flex w-full items-center gap-3 rounded-card bg-surface px-4 py-3.5 text-left shadow-card transition-transform duration-150 active:scale-[0.98]",
+          settled && "opacity-55",
+        )}
       >
         <span
           className="flex size-10 shrink-0 items-center justify-center rounded-full text-[13px] font-bold text-on-ink"
@@ -152,8 +170,11 @@ function ExpenseRow({ expense, onEdit }: { expense: ExpenseItem; onEdit: () => v
           {payer.name.slice(0, 1)}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[16px] font-bold">{expense.title}</span>
+          <span className={cn("block truncate text-[16px] font-bold", settled && "line-through")}>
+            {expense.title}
+          </span>
           <span className="mt-0.5 block text-[13px] text-muted">
+            {settled ? "погашено · " : ""}
             {cat}
             {" · "}{format(new Date(expense.date + "T12:00:00"), "d MMM", { locale: ru })}
             {" · "}{payer.name}
@@ -302,6 +323,30 @@ function ExpenseSheet({
         <Button type="submit" className="mt-2">
           {editing ? "Сохранить" : "Добавить"}
         </Button>
+        {editing && !editing.settled ? (
+          <Button
+            variant="secondary"
+            onClick={() => {
+              updateExpense(editing.id, { settled: true });
+              toast("Трата погашена");
+              onOpenChange(false);
+            }}
+          >
+            Погасить эту трату
+          </Button>
+        ) : null}
+        {editing && editing.settled ? (
+          <Button
+            variant="secondary"
+            onClick={() => {
+              updateExpense(editing.id, { settled: false });
+              toast("Вернули в открытый долг");
+              onOpenChange(false);
+            }}
+          >
+            Вернуть в долг
+          </Button>
+        ) : null}
         {editing ? (
           <Button
             variant="ghost"
