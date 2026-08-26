@@ -24,35 +24,11 @@ export function netBalance(expenses: ExpenseItem[]): number {
 }
 
 export function parseAmountInput(raw: string): number | null {
-  const cleaned = raw.replace(/\s/g, "").replace(",", ".").replace(/[^
-\d.]/g, "");
+  const cleaned = raw.replace(/\s/g, "").replace(",", ".").replace(/[^\d.]/g, "");
   if (!cleaned) return null;
   const n = Number(cleaned);
   if (!Number.isFinite(n) || n <= 0) return null;
   return Math.round(n * 100) / 100;
-}
-
-export function balanceLabel(
-  balance: number,
-  names: Record<PartnerId, string>,
-): { text: string; even: boolean } {
-  if (Math.abs(balance) < 0.5) {
-    return { text: "Всё поровну", even: true };
-  }
-  if (balance > 0) {
-    return {
-      text: `${names.b} должен${names.b.endsWith("а") ? "а" : ""} ${names.a} ${formatRub(balance)}`.replace(
-        /должен(а)?/,
-        // rough: female names often end with а — keep simple wording
-        "должен",
-      ),
-      even: false,
-    };
-  }
-  return {
-    text: `${names.a} должен ${names.b} ${formatRub(-balance)}`,
-    even: false,
-  };
 }
 
 /** Neutral wording without gendered verb. */
