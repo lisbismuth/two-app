@@ -236,7 +236,7 @@ function EventSheet({
     if (!open) return;
     setTitle(editing?.title ?? "");
     setNotes(editing?.notes ?? "");
-    setDate(editing?.date ?? defaultDate || todayISO());
+    setDate(editing?.date ?? (defaultDate || todayISO()));
   }, [open, defaultDate, editing]);
 
   return (
