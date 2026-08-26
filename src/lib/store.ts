@@ -101,6 +101,8 @@ interface AppState {
   }) => void;
   updateExpense: (id: string, patch: Partial<ExpenseItem>) => void;
   deleteExpense: (id: string) => void;
+  /** Mark all open expenses settled — zeros the debt balance. */
+  settleBalance: () => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -391,6 +393,7 @@ export const useAppStore = create<AppState>()(
               category: input.category ?? "other",
               date: input.date,
               notes: input.notes?.trim() ?? "",
+              settled: false,
               createdAt: new Date().toISOString(),
             },
             ...s.expenses,
@@ -403,6 +406,11 @@ export const useAppStore = create<AppState>()(
         })),
 
       deleteExpense: (id) => set((s) => ({ expenses: s.expenses.filter((e) => e.id !== id) })),
+
+      settleBalance: () =>
+        set((s) => ({
+          expenses: s.expenses.map((e) => (e.settled ? e : { ...e, settled: true })),
+        })),
     }),
     { name: "dvoe-couple-v1" },
   ),
