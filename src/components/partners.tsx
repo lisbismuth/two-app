@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Check } from "lucide-react";
 import { Button, Field, Input, Sheet } from "@/components/ui";
+import { AccountRow } from "@/components/shell";
 import { genderLabel, PARTNER_COLORS } from "@/lib/i18n";
 import { otherId, useAppStore } from "@/lib/store";
 import type { Gender, Partner, PartnerId } from "@/lib/types";
@@ -63,6 +64,9 @@ export function PartnerSwitcher({
           <Button variant="ghost" size="md" onClick={() => setEditing(otherId(currentId))}>
             Редактировать {partners[otherId(currentId)].name}
           </Button>
+        </div>
+        <div className="mt-6">
+          <AccountRow />
         </div>
       </Sheet>
       {editing ? (
