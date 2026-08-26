@@ -4,6 +4,7 @@ import type {
   CalEvent,
   Capsule,
   DocItem,
+  ExpenseCategory,
   ExpenseItem,
   Partner,
   PartnerId,
@@ -94,6 +95,7 @@ interface AppState {
     title: string;
     amount: number;
     paidBy: PartnerId;
+    category?: ExpenseCategory;
     date: string;
     notes?: string;
   }) => void;
@@ -386,6 +388,7 @@ export const useAppStore = create<AppState>()(
               title: input.title.trim() || "Покупка",
               amount: input.amount,
               paidBy: input.paidBy,
+              category: input.category ?? "other",
               date: input.date,
               notes: input.notes?.trim() ?? "",
               createdAt: new Date().toISOString(),
