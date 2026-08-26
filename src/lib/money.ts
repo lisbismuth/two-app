@@ -13,10 +13,12 @@ export function formatRub(amount: number): string {
  * Positive → partner `b` owes `a` this much.
  * Negative → partner `a` owes `b` this much (absolute value).
  * Zero → even.
+ * Settled expenses do not affect the balance.
  */
 export function netBalance(expenses: ExpenseItem[]): number {
   let balance = 0;
   for (const e of expenses) {
+    if (e.settled) continue;
     const half = e.amount / 2;
     balance += e.paidBy === "a" ? half : -half;
   }

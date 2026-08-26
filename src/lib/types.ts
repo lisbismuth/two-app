@@ -93,6 +93,8 @@ export interface ExpenseItem {
   category: ExpenseCategory;
   date: string;
   notes: string;
+  /** When true, excluded from debt balance (settled). */
+  settled: boolean;
   createdAt: string;
 }
 
