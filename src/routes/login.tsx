@@ -2,14 +2,21 @@ import { useState } from "react";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { authClient, authEnabled } from "@/lib/auth/client";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
+import {
+  isAllowedEmail,
+  normalizeEmail,
+  partnerIdFromEmail,
+  PARTNER_DISPLAY_NAME,
+} from "@/lib/partners-auth";
+import { useAppStore } from "@/lib/store";
 import { Button, Field, Input } from "@/components/ui";
 
 export const Route = createFileRoute("/login")({ component: LoginPage });
 
 function LoginPage() {
   const { user, isPending } = useCurrentUserState();
+  const setCurrentId = useAppStore((s) => s.setCurrentId);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -34,24 +41,36 @@ function LoginPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    const normalized = normalizeEmail(email);
+    if (!isAllowedEmail(normalized)) {
+      setError("Эта почта не имеет доступа. Только два аккаунта пары.");
+      return;
+    }
+
+    const partnerId = partnerIdFromEmail(normalized)!;
+    const displayName = PARTNER_DISPLAY_NAME[partnerId];
+
     setBusy(true);
     try {
       if (mode === "signup") {
         const { error: err } = await authClient.signUp.email({
-          name: name.trim() || email.split("@")[0] || "Партнёр",
-          email: email.trim(),
+          name: displayName,
+          email: normalized,
           password,
           callbackURL: "/",
         });
         if (err) throw new Error(err.message ?? "Не удалось зарегистрироваться");
       } else {
         const { error: err } = await authClient.signIn.email({
-          email: email.trim(),
+          email: normalized,
           password,
           callbackURL: "/",
         });
         if (err) throw new Error(err.message ?? "Неверный email или пароль");
       }
+      // Bind in-app partner to this email before navigating.
+      setCurrentId(partnerId);
       window.location.href = "/";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Что-то пошло не так");
@@ -65,27 +84,17 @@ function LoginPage() {
         <div className="rise-in mb-10 text-center">
           <p className="text-3xl font-extrabold tracking-tight text-ink">Двое</p>
           <p className="mt-2 text-[15px] text-muted">
-            {mode === "signin" ? "Войдите, чтобы продолжить" : "Создайте аккаунт для двоих"}
+            {mode === "signin" ? "Войдите, чтобы продолжить" : "Создайте свой аккаунт"}
           </p>
         </div>
 
         <form className="rise-in rise-in-1 flex flex-col gap-4" onSubmit={onSubmit}>
-          {mode === "signup" ? (
-            <Field label="Имя">
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Как к вам обращаться"
-                autoComplete="name"
-              />
-            </Field>
-          ) : null}
           <Field label="Email">
             <Input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder="Ваша почта"
               autoComplete="email"
               required
             />

@@ -1,17 +1,14 @@
 /**
  * Local email/password sign-in (this app's Better Auth DB — not the broker).
  *
- * Enabled for the couple app. Forms use `authClient.signUp.email` /
- * `authClient.signIn.email` from `@/lib/auth/client`.
- *
- * After both partners have accounts, set `disableSignUp: true` below so nobody
- * else can register.
+ * Only the two partner emails in `src/lib/partners-auth.ts` may register or sign in.
+ * Server rejects everyone else via databaseHooks in `server.ts`.
  */
 export const emailAndPasswordEnabled = true;
 
 /** Passed into Better Auth when email/password is on. */
 export const emailAndPasswordOptions = {
   enabled: true as const,
-  /** Set to true once both of you have signed up — blocks further registration. */
+  /** Registration stays open only for the two allowlisted emails. */
   disableSignUp: false,
 };

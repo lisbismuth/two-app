@@ -11,6 +11,7 @@ import { authEnabled } from "@/lib/auth/client";
 import { RedirectToSignIn, UserButton } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { SIGN_IN_PATH } from "@/lib/auth/gates";
+import { partnerIdFromEmail } from "@/lib/partners-auth";
 
 const TABS = [
   { to: "/", label: "Задачи", icon: ListTodo, end: true },
@@ -39,6 +40,22 @@ function Splash() {
       <p className="text-3xl font-extrabold tracking-tight text-ink">Двое</p>
     </div>
   );
+}
+
+/** Keep in-app partner (Лиза / Андрей) in sync with the signed-in email. */
+function PartnerFromAuth() {
+  const { user } = useCurrentUserState();
+  const currentId = useAppStore((s) => s.currentId);
+  const setCurrentId = useAppStore((s) => s.setCurrentId);
+
+  useEffect(() => {
+    const partnerId = partnerIdFromEmail(user?.primaryEmail);
+    if (partnerId && partnerId !== currentId) {
+      setCurrentId(partnerId);
+    }
+  }, [user?.primaryEmail, currentId, setCurrentId]);
+
+  return null;
 }
 
 export function AppShell() {
@@ -73,6 +90,7 @@ export function AppShell() {
 
   return (
     <HydrationGate>
+      <PartnerFromAuth />
       <div className="flex min-h-dvh justify-center bg-bg-warm">
         <div className="relative flex min-h-dvh w-full max-w-lg flex-col overflow-x-hidden bg-bg sm:shadow-float">
           {setupComplete ? (

@@ -29,13 +29,14 @@
  * components read the user via `@/lib/auth/use-current-user`; server functions get
  * a verified id via `@/lib/auth/middleware`.
  */
-import { betterAuth } from "better-auth";
+import { APIError, betterAuth } from "better-auth";
 import { bearer, genericOAuth } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { getCookie } from "@tanstack/react-start/server";
 import { randomBytes } from "node:crypto";
 import { Pool } from "pg";
 import { ensureDbReady, getPglite } from "../db";
+import { isAllowedEmail, partnerIdFromEmail, PARTNER_DISPLAY_NAME } from "../partners-auth";
 import { emailAndPasswordEnabled, emailAndPasswordOptions } from "./email-password";
 import { GATE_PROVIDER_ID, gateIdentitySessions } from "./gate-session.server";
 import { GROK_PROVIDERS } from "./providers";
@@ -182,6 +183,14 @@ const grokOAuthPlugin = authConfigured
     })
   : null;
 
+function assertAllowedEmail(email: string | undefined | null): void {
+  if (!email || !isAllowedEmail(email)) {
+    throw new APIError("FORBIDDEN", {
+      message: "Доступ только для двух аккаунтов этого приложения",
+    });
+  }
+}
+
 export const auth = betterAuth({
   baseURL,
   // Deployed apps inject BETTER_AUTH_SECRET. Preview: process-stable secret on
@@ -222,6 +231,35 @@ export const auth = betterAuth({
 
   // Local email/password — toggled only via `./email-password` (not a plugin).
   ...(emailAndPasswordEnabled ? { emailAndPassword: emailAndPasswordOptions } : {}),
+
+  // Only the two partner emails may create accounts. Name is forced to the
+  // partner display name (Лиза / Андрей) so the session matches the in-app role.
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          assertAllowedEmail(user.email);
+          const partnerId = partnerIdFromEmail(user.email);
+          const name = partnerId ? PARTNER_DISPLAY_NAME[partnerId] : user.name;
+          return { data: { ...user, name, email: user.email.trim().toLowerCase() } };
+        },
+      },
+    },
+    session: {
+      create: {
+        before: async (session, ctx) => {
+          // Block sessions for non-allowlisted users (e.g. leftover accounts).
+          const email =
+            (ctx as { user?: { email?: string } } | undefined)?.user?.email ??
+            undefined;
+          // ctx shape varies; also re-check via userId is not available here
+          // without a query — primary gate is user.create. Keep session hook light.
+          if (email) assertAllowedEmail(email);
+          return { data: session };
+        },
+      },
+    },
+  },
 
   // `__Host-` prefixed cookies: the browser REFUSES any same-named cookie that
   // carries a `Domain` attribute, so a sibling `*.grok.me` app cannot "toss" a
