@@ -32,6 +32,18 @@ const SYNCED_KEYS = [
   "startedAt",
 ] as const satisfies readonly (keyof ReturnType<typeof useAppStore.getState>)[];
 
+/** Array fields that older server snapshots may omit. */
+const ARRAY_DEFAULTS = [
+  "tasks",
+  "events",
+  "wishes",
+  "plans",
+  "docs",
+  "capsules",
+  "votes",
+  "expenses",
+] as const;
+
 type FullState = ReturnType<typeof useAppStore.getState>;
 type SyncedSlice = Pick<FullState, (typeof SYNCED_KEYS)[number]>;
 
@@ -47,6 +59,14 @@ function pickSyncedSlice(state: FullState): SyncedSlice {
     (out as Record<string, unknown>)[key] = state[key];
   }
   return out;
+}
+
+function normalizeRemote(data: SyncedSlice): SyncedSlice {
+  const next = { ...data } as SyncedSlice & Record<string, unknown>;
+  for (const key of ARRAY_DEFAULTS) {
+    if (!Array.isArray(next[key])) next[key] = [];
+  }
+  return next;
 }
 
 /**
@@ -78,7 +98,7 @@ export function useServerSync(): void {
     function applyRemote(data: SyncedSlice, updatedAt: number | null) {
       lastKnownUpdatedAt.current = updatedAt;
       applyingRemote.current = true;
-      useAppStore.setState(data);
+      useAppStore.setState(normalizeRemote(data));
       applyingRemote.current = false;
     }
 
