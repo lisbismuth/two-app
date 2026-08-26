@@ -7,9 +7,15 @@ import { toast } from "sonner";
 import { Button, EmptyState, Field, Input, Sheet, Textarea } from "@/components/ui";
 import { DatePicker } from "@/components/date-picker";
 import { Page, PageHeader } from "@/components/shell";
+import {
+  EXPENSE_CATEGORIES,
+  categoryLabel,
+  categoryStats,
+  normalizeCategory,
+} from "@/lib/expense-categories";
 import { balanceText, formatRub, parseAmountInput } from "@/lib/money";
 import { useAppStore } from "@/lib/store";
-import type { ExpenseItem, PartnerId } from "@/lib/types";
+import type { ExpenseCategory, ExpenseItem, PartnerId } from "@/lib/types";
 import { cn, todayISO } from "@/lib/utils";
 
 export const Route = createFileRoute("/expenses")({ component: ExpensesPage });
@@ -34,6 +40,7 @@ function ExpensesPage() {
   );
 
   const total = expenses.reduce((s, e) => s + e.amount, 0);
+  const stats = useMemo(() => categoryStats(expenses), [expenses]);
 
   return (
     <Page>
@@ -45,24 +52,46 @@ function ExpensesPage() {
         }}
       />
 
-      <div className="mb-5 rounded-card bg-surface px-5 py-5 shadow-card">
+      <div className="mb-4 rounded-card bg-surface px-5 py-5 shadow-card">
         <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-muted">Баланс</p>
         <p className="mt-2 text-[36px] font-extrabold leading-none tracking-tight tabular">
           {bal.headline}
         </p>
         <p className="mt-2 text-[14px] text-muted">{bal.detail}</p>
         {total > 0 ? (
-          <p className="mt-3 text-[13px] text-faint">
-            Всего общих покупок: {formatRub(total)}
-          </p>
+          <p className="mt-3 text-[13px] text-faint">Всего общих покупок: {formatRub(total)}</p>
         ) : null}
       </div>
+
+      {stats.length > 0 ? (
+        <div className="mb-5 rounded-card bg-surface px-4 py-4 shadow-card">
+          <p className="mb-3 text-[12px] font-semibold uppercase tracking-[0.12em] text-muted">
+            По категориям
+          </p>
+          <ul className="flex flex-col gap-3">
+            {stats.map((s) => (
+              <li key={s.id}>
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <span className="text-[14px] font-semibold">{s.label}</span>
+                  <span className="text-[14px] font-bold tabular">{formatRub(s.amount)}</span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-chip">
+                  <div
+                    className="h-full rounded-full bg-rose"
+                    style={{ width: `${Math.max(4, Math.round(s.share * 100))}%` }}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {sorted.length === 0 ? (
         <EmptyState
           icon={<Wallet className="size-16" strokeWidth={1.2} />}
           title="Общие траты"
-          text="Продукты, быт, такси — запишите сумму, кто заплатил. Делится пополам само."
+          text="Продукты, быт, такси — запишите сумму и категорию. Делится пополам само."
           action={
             <Button
               onClick={() => {
@@ -106,6 +135,7 @@ function ExpenseRow({ expense, onEdit }: { expense: ExpenseItem; onEdit: () => v
   const partners = useAppStore((s) => s.partners);
   const payer = partners[expense.paidBy];
   const half = expense.amount / 2;
+  const cat = categoryLabel(normalizeCategory(expense.category));
 
   return (
     <li>
@@ -124,8 +154,9 @@ function ExpenseRow({ expense, onEdit }: { expense: ExpenseItem; onEdit: () => v
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[16px] font-bold">{expense.title}</span>
           <span className="mt-0.5 block text-[13px] text-muted">
-            {format(new Date(expense.date + "T12:00:00"), "d MMM", { locale: ru })}
-            {" · платил(а) "}{payer.name}
+            {cat}
+            {" · "}{format(new Date(expense.date + "T12:00:00"), "d MMM", { locale: ru })}
+            {" · "}{payer.name}
             {" · по "}{formatRub(half)}
           </span>
         </span>
@@ -153,6 +184,7 @@ function ExpenseSheet({
   const [title, setTitle] = useState("");
   const [amountRaw, setAmountRaw] = useState("");
   const [paidBy, setPaidBy] = useState<PartnerId>(currentId);
+  const [category, setCategory] = useState<ExpenseCategory>("groceries");
   const [date, setDate] = useState(todayISO());
   const [notes, setNotes] = useState("");
 
@@ -161,6 +193,7 @@ function ExpenseSheet({
     setTitle(editing?.title ?? "");
     setAmountRaw(editing ? String(editing.amount) : "");
     setPaidBy(editing?.paidBy ?? currentId);
+    setCategory(normalizeCategory(editing?.category ?? "groceries"));
     setDate(editing?.date ?? todayISO());
     setNotes(editing?.notes ?? "");
   }, [open, editing, currentId]);
@@ -183,6 +216,7 @@ function ExpenseSheet({
               title: title.trim() || "Покупка",
               amount,
               paidBy,
+              category,
               date,
               notes,
             });
@@ -192,6 +226,7 @@ function ExpenseSheet({
               title: title.trim() || "Покупка",
               amount,
               paidBy,
+              category,
               date,
               notes,
             });
@@ -217,10 +252,25 @@ function ExpenseSheet({
           />
         </Field>
         {half ? (
-          <p className="-mt-2 px-1 text-[13px] text-muted">
-            Каждый по {formatRub(half)}
-          </p>
+          <p className="-mt-2 px-1 text-[13px] text-muted">Каждый по {formatRub(half)}</p>
         ) : null}
+        <Field label="Категория">
+          <div className="flex flex-wrap gap-1.5">
+            {EXPENSE_CATEGORIES.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setCategory(c.id)}
+                className={cn(
+                  "h-9 rounded-full px-3 text-[13px] font-semibold",
+                  category === c.id ? "bg-ink text-on-ink" : "bg-chip text-ink-soft",
+                )}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </Field>
         <Field label="Кто заплатил">
           <div className="grid grid-cols-2 gap-1.5">
             {(["a", "b"] as PartnerId[]).map((id) => (
