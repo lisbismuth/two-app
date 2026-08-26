@@ -122,6 +122,9 @@ function TaskRow({ task, onEdit }: { task: TaskItem; onEdit: () => void }) {
           <p className={cn("text-[16px] font-semibold leading-snug", task.done && "text-muted line-through")}>
             {task.title}
           </p>
+          {task.notes ? (
+            <p className="mt-0.5 line-clamp-1 text-[13px] text-ink-soft">{task.notes}</p>
+          ) : null}
           {task.dueDate ? (
             <p className="mt-0.5 text-[12px] text-muted">
               до {format(new Date(task.dueDate + "T12:00:00"), "d MMMM", { locale: ru })}
