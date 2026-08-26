@@ -73,6 +73,7 @@ interface AppState {
   deleteWish: (id: string) => void;
 
   addPlan: (input: { title: string; notes?: string; date?: string | null; kind: PlanItem["kind"] }) => void;
+  updatePlan: (id: string, patch: Partial<PlanItem>) => void;
   togglePlan: (id: string) => void;
   deletePlan: (id: string) => void;
 
@@ -285,6 +286,11 @@ export const useAppStore = create<AppState>()(
             },
             ...s.plans,
           ],
+        })),
+
+      updatePlan: (id, patch) =>
+        set((s) => ({
+          plans: s.plans.map((p) => (p.id === id ? { ...p, ...patch } : p)),
         })),
 
       togglePlan: (id) =>
