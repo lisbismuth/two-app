@@ -4,6 +4,7 @@ import type {
   CalEvent,
   Capsule,
   DocItem,
+  ExpenseItem,
   Partner,
   PartnerId,
   PlanItem,
@@ -48,6 +49,7 @@ interface AppState {
   docs: DocItem[];
   capsules: Capsule[];
   votes: Vote[];
+  expenses: ExpenseItem[];
 
   completeSetup: (payload: {
     partners: Record<PartnerId, Partner>;
@@ -87,6 +89,16 @@ interface AppState {
   addVote: (input: { question: string; options: string[] }) => void;
   castVote: (id: string, optionIndex: number) => void;
   deleteVote: (id: string) => void;
+
+  addExpense: (input: {
+    title: string;
+    amount: number;
+    paidBy: PartnerId;
+    date: string;
+    notes?: string;
+  }) => void;
+  updateExpense: (id: string, patch: Partial<ExpenseItem>) => void;
+  deleteExpense: (id: string) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -173,6 +185,7 @@ export const useAppStore = create<AppState>()(
           createdAt: now,
         },
       ],
+      expenses: [],
 
       completeSetup: ({ partners: next, startedAt, currentId }) =>
         set({ setupComplete: true, partners: next, startedAt, currentId }),
@@ -364,6 +377,29 @@ export const useAppStore = create<AppState>()(
       },
 
       deleteVote: (id) => set((s) => ({ votes: s.votes.filter((v) => v.id !== id) })),
+
+      addExpense: (input) =>
+        set((s) => ({
+          expenses: [
+            {
+              id: uid(),
+              title: input.title.trim() || "Покупка",
+              amount: input.amount,
+              paidBy: input.paidBy,
+              date: input.date,
+              notes: input.notes?.trim() ?? "",
+              createdAt: new Date().toISOString(),
+            },
+            ...s.expenses,
+          ],
+        })),
+
+      updateExpense: (id, patch) =>
+        set((s) => ({
+          expenses: s.expenses.map((e) => (e.id === id ? { ...e, ...patch } : e)),
+        })),
+
+      deleteExpense: (id) => set((s) => ({ expenses: s.expenses.filter((e) => e.id !== id) })),
     }),
     { name: "dvoe-couple-v1" },
   ),

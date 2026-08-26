@@ -76,6 +76,17 @@ export interface Vote {
   createdAt: string;
 }
 
+/** Shared purchase split 50/50. `amount` is the total in rubles. */
+export interface ExpenseItem {
+  id: string;
+  title: string;
+  amount: number;
+  paidBy: PartnerId;
+  date: string;
+  notes: string;
+  createdAt: string;
+}
+
 export type CalKind = "event" | "task" | "birthday" | "anniversary";
 
 export interface CalendarItem {

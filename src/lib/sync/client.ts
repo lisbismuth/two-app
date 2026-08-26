@@ -27,6 +27,7 @@ const SYNCED_KEYS = [
   "docs",
   "capsules",
   "votes",
+  "expenses",
   "partners",
   "startedAt",
 ] as const satisfies readonly (keyof ReturnType<typeof useAppStore.getState>)[];
