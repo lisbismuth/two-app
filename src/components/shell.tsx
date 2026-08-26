@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { CalendarDays, Folder, Gift, Heart, ListTodo, Plus } from "lucide-react";
+import { CalendarDays, Folder, Gift, Heart, ListTodo, Plus, Wallet } from "lucide-react";
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAppStore, useMe } from "@/lib/store";
@@ -16,8 +16,8 @@ import { partnerIdFromEmail } from "@/lib/partners-auth";
 const TABS = [
   { to: "/", label: "Задачи", icon: ListTodo, end: true },
   { to: "/calendar", label: "Календарь", icon: CalendarDays, end: false },
+  { to: "/expenses", label: "Траты", icon: Wallet, end: false },
   { to: "/wishes", label: "Хотелки", icon: Gift, end: false },
-  { to: "/docs", label: "Документы", icon: Folder, end: false },
   { to: "/us", label: "Мы", icon: Heart, end: false },
 ] as const;
 
@@ -230,3 +230,6 @@ export function AccountRow() {
     </div>
   );
 }
+
+/** Re-export so Us page can deep-link to docs without a tab. */
+export const DOCS_TAB = { to: "/docs" as const, label: "Документы", icon: Folder };
