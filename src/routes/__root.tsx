@@ -1,4 +1,5 @@
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { Analytics } from "@vercel/analytics/react";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { AppShell } from "@/components/shell";
@@ -46,6 +47,7 @@ function RootDocument() {
           <AppShell />
         </AuthProvider>
         <Scripts />
+        <Analytics />
       </body>
     </html>
   );
