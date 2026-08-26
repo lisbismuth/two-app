@@ -1,21 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { addMonths, format, subMonths } from "date-fns";
 import { ru } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Field, Input, Sheet, Textarea } from "@/components/ui";
 import { DatePicker } from "@/components/date-picker";
-import { Page, PageHeader } from "@/components/shell";
 import { buildCalendarItems, monthCells, sameDay, upcomingItems } from "@/lib/dates";
 import { MONTHS_SHORT, WEEKDAYS } from "@/lib/i18n";
 import { otherId, useAppStore, useMe, usePartner } from "@/lib/store";
 import type { CalendarItem, TaskAssignee, TaskItem } from "@/lib/types";
 import { capitalize, cn, isoDate, parseISODate, todayISO } from "@/lib/utils";
 
-export const Route = createFileRoute("/calendar")({ component: CalendarPage });
+/** Old /calendar links land on the combined Дела tab. */
+export const Route = createFileRoute("/calendar")({
+  component: () => <Navigate to="/" search={{ view: "calendar" }} replace />,
+});
 
-function CalendarPage() {
+export function CalendarPanel() {
   const [cursor, setCursor] = useState(() => new Date());
   const [selected, setSelected] = useState(() => new Date());
   const [eventOpen, setEventOpen] = useState(false);
@@ -68,33 +70,30 @@ function CalendarPage() {
   }
 
   return (
-    <Page>
-      <PageHeader
-        kicker={format(today, "eeee, d MMMM", { locale: ru })}
-        title={capitalize(format(cursor, "LLLL", { locale: ru }))}
-        avatar
-        kickerUpper={false}
-        extra={
-          <>
-            <button
-              type="button"
-              aria-label="Предыдущий месяц"
-              onClick={() => setCursor((d) => subMonths(d, 1))}
-              className="flex size-9 items-center justify-center text-ink"
-            >
-              <ChevronLeft className="size-5" />
-            </button>
-            <button
-              type="button"
-              aria-label="Следующий месяц"
-              onClick={() => setCursor((d) => addMonths(d, 1))}
-              className="flex size-9 items-center justify-center text-ink"
-            >
-              <ChevronRight className="size-5" />
-            </button>
-          </>
-        }
-      />
+    <>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-[22px] font-extrabold tracking-tight">
+          {capitalize(format(cursor, "LLLL", { locale: ru }))}
+        </h2>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            aria-label="Предыдущий месяц"
+            onClick={() => setCursor((d) => subMonths(d, 1))}
+            className="flex size-9 items-center justify-center text-ink"
+          >
+            <ChevronLeft className="size-5" />
+          </button>
+          <button
+            type="button"
+            aria-label="Следующий месяц"
+            onClick={() => setCursor((d) => addMonths(d, 1))}
+            className="flex size-9 items-center justify-center text-ink"
+          >
+            <ChevronRight className="size-5" />
+          </button>
+        </div>
+      </div>
 
       <div className="grid grid-cols-7 gap-y-0.5">
         {WEEKDAYS.map((d) => (
@@ -132,9 +131,9 @@ function CalendarPage() {
 
       <section className="mt-6">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-[12px] font-semibold uppercase tracking-[0.14em] text-muted">
+          <h3 className="text-[12px] font-semibold uppercase tracking-[0.14em] text-muted">
             {sameDay(selected, today) ? "Ближайшие" : format(selected, "d MMMM", { locale: ru })}
-          </h2>
+          </h3>
           <button
             type="button"
             onClick={() => {
@@ -169,7 +168,7 @@ function CalendarPage() {
         editingId={editingEventId}
       />
 
-      <TaskSheet
+      <CalTaskSheet
         open={taskOpen}
         onOpenChange={(v) => {
           setTaskOpen(v);
@@ -177,7 +176,7 @@ function CalendarPage() {
         }}
         editing={editingTask}
       />
-    </Page>
+    </>
   );
 }
 
@@ -285,7 +284,7 @@ function EventSheet({
   );
 }
 
-function TaskSheet({
+function CalTaskSheet({
   open,
   onOpenChange,
   editing,
@@ -362,12 +361,7 @@ function TaskSheet({
           </div>
         </Field>
         <Field label="Срок — попадёт в календарь">
-          <DatePicker
-            value={dueDate}
-            onChange={setDueDate}
-            placeholder="Без срока"
-            allowClear
-          />
+          <DatePicker value={dueDate} onChange={setDueDate} placeholder="Без срока" allowClear />
         </Field>
         <Button type="submit" className="mt-2">
           Сохранить
