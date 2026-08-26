@@ -2,6 +2,14 @@ export type PartnerId = "a" | "b";
 export type Gender = "female" | "male" | "other";
 export type TaskAssignee = PartnerId | "none";
 
+export type ExpenseCategory =
+  | "groceries"
+  | "cafes"
+  | "taxi"
+  | "delivery"
+  | "home"
+  | "other";
+
 export interface Partner {
   id: PartnerId;
   name: string;
@@ -82,6 +90,7 @@ export interface ExpenseItem {
   title: string;
   amount: number;
   paidBy: PartnerId;
+  category: ExpenseCategory;
   date: string;
   notes: string;
   createdAt: string;
