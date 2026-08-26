@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { format } from "date-fns";
+import { useEffect, useState } from "react";
+import { addMonths, format, subMonths } from "date-fns";
 import { ru } from "date-fns/locale";
 import { DayPicker } from "react-day-picker";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -28,6 +28,15 @@ export function DatePicker({
   const [open, setOpen] = useState(false);
   const selected = value ? parseISODate(value) : undefined;
 
+  const initialMonth = selected ?? (min ? parseISODate(min) : new Date());
+  const [month, setMonth] = useState(initialMonth);
+
+  // Keep visible month in sync when the value changes or panel opens
+  useEffect(() => {
+    if (!open) return;
+    setMonth(selected ?? (min ? parseISODate(min) : new Date()));
+  }, [open, value]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const label = selected
     ? format(selected, "d MMMM yyyy", { locale: ru })
     : placeholder;
@@ -44,18 +53,45 @@ export function DatePicker({
           selected ? "text-ink" : "text-faint",
         )}
       >
-        <span>{label}</span>
-        <span className="text-[12px] font-medium text-muted">{open ? "Скрыть" : "Календарь"}</span>
+        <span className="truncate">{label}</span>
+        <span className="ml-3 shrink-0 text-[12px] font-medium text-muted">
+          {open ? "Скрыть" : "Календарь"}
+        </span>
       </button>
 
       {open ? (
-        <div className="rounded-card bg-surface p-3 shadow-card">
+        <div className="overflow-hidden rounded-card bg-surface p-3 shadow-card">
+          {/* Own nav — no absolute positioning from DayPicker */}
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <button
+              type="button"
+              aria-label="Предыдущий месяц"
+              onClick={() => setMonth((m) => subMonths(m, 1))}
+              className="flex size-10 shrink-0 items-center justify-center rounded-full text-ink active:bg-chip"
+            >
+              <ChevronLeft className="size-5" />
+            </button>
+            <p className="min-w-0 flex-1 text-center text-[15px] font-bold capitalize text-ink">
+              {format(month, "LLLL yyyy", { locale: ru })}
+            </p>
+            <button
+              type="button"
+              aria-label="Следующий месяц"
+              onClick={() => setMonth((m) => addMonths(m, 1))}
+              className="flex size-10 shrink-0 items-center justify-center rounded-full text-ink active:bg-chip"
+            >
+              <ChevronRight className="size-5" />
+            </button>
+          </div>
+
           <DayPicker
             mode="single"
             locale={ru}
             weekStartsOn={1}
+            month={month}
+            onMonthChange={setMonth}
+            hideNavigation
             selected={selected}
-            defaultMonth={selected ?? (min ? parseISODate(min) : new Date())}
             onSelect={(day) => {
               if (!day) return;
               onChange(isoDate(day));
@@ -65,41 +101,28 @@ export function DatePicker({
               ...(min ? [{ before: parseISODate(min) }] : []),
               ...(max ? [{ after: parseISODate(max) }] : []),
             ]}
-            className="rdp-root"
             classNames={{
               root: "w-full",
               months: "w-full",
               month: "w-full",
-              month_caption: "flex items-center justify-center relative h-10 mb-2",
-              caption_label: "text-[15px] font-bold capitalize text-ink",
-              nav: "absolute inset-x-0 top-0 flex items-center justify-between px-0",
-              button_previous:
-                "flex size-9 items-center justify-center rounded-full text-ink hover:bg-chip",
-              button_next:
-                "flex size-9 items-center justify-center rounded-full text-ink hover:bg-chip",
-              month_grid: "w-full border-collapse",
-              weekdays: "flex",
+              month_caption: "hidden",
+              month_grid: "w-full",
+              weekdays: "grid grid-cols-7",
               weekday:
-                "flex-1 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-faint pb-1",
-              week: "flex w-full",
-              day: "flex-1 p-0 text-center",
+                "text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-faint pb-1.5",
+              week: "grid grid-cols-7",
+              day: "p-0 text-center",
               day_button:
-                "mx-auto flex size-9 items-center justify-center rounded-full text-[15px] font-medium text-ink hover:bg-chip",
-              selected: "[&>button]:bg-ink [&>button]:text-on-ink hover:[&>button]:bg-ink",
+                "mx-auto flex size-9 items-center justify-center rounded-full text-[15px] font-medium text-ink active:bg-chip",
+              selected:
+                "[&>button]:bg-ink [&>button]:text-on-ink active:[&>button]:bg-ink",
               today: "[&>button]:ring-1 [&>button]:ring-ink/20",
               outside: "[&>button]:text-faint",
-              disabled: "[&>button]:text-faint/50 [&>button]:pointer-events-none",
+              disabled: "[&>button]:text-faint/40 [&>button]:pointer-events-none",
               hidden: "invisible",
             }}
-            components={{
-              Chevron: ({ orientation }) =>
-                orientation === "left" ? (
-                  <ChevronLeft className="size-5" />
-                ) : (
-                  <ChevronRight className="size-5" />
-                ),
-            }}
           />
+
           {allowClear && value ? (
             <button
               type="button"
