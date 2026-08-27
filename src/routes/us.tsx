@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
-import { CheckCircle2, ChevronRight, Folder, Lock, Mail } from "lucide-react";
+import { BarChart3, CheckCircle2, ChevronRight, Lock, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Card, Field, Input, Sheet, Textarea } from "@/components/ui";
 import { Page, PageHeader } from "@/components/shell";
@@ -14,7 +14,9 @@ import {
   untilAnniversaryLabel,
   untilAnniversaryLines,
 } from "@/lib/dates";
+import { categoryStats, monthlyExpenseStats } from "@/lib/expense-categories";
 import { genderLabel, plural } from "@/lib/i18n";
+import { formatRub } from "@/lib/money";
 import { otherId, useAppStore, useMe } from "@/lib/store";
 import type { Capsule, PartnerId, Vote } from "@/lib/types";
 import { cn, todayISO } from "@/lib/utils";
@@ -22,27 +24,25 @@ import { cn, todayISO } from "@/lib/utils";
 export const Route = createFileRoute("/us")({ component: UsPage });
 
 function UsPage() {
-  const navigate = useNavigate();
   const me = useMe();
   const partners = useAppStore((s) => s.partners);
   const startedAt = useAppStore((s) => s.startedAt);
   const setStartedAt = useAppStore((s) => s.setStartedAt);
   const wishes = useAppStore((s) => s.wishes);
   const plans = useAppStore((s) => s.plans);
-  const docs = useAppStore((s) => s.docs);
   const tasks = useAppStore((s) => s.tasks);
   const votes = useAppStore((s) => s.votes);
   const capsules = useAppStore((s) => s.capsules);
 
   const [capsOpen, setCapsOpen] = useState(false);
   const [voteOpen, setVoteOpen] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
   const [editing, setEditing] = useState<PartnerId | null>(null);
   const [dateOpen, setDateOpen] = useState(false);
 
   const together = daysTogether(startedAt);
   const until = daysUntil(nextAnniversary(startedAt));
   const untilLines = untilAnniversaryLines(startedAt);
-  const year = new Date().getFullYear();
 
   const fulfilled = wishes.filter((w) => w.done).length;
   const trips = plans.filter((p) => p.kind === "trip").length;
@@ -55,6 +55,17 @@ function UsPage() {
       <PageHeader kicker={me.name} title="Мы" avatar />
 
       <div className="flex flex-col gap-2.5">
+        <Card onClick={() => setStatsOpen(true)} className="flex items-center gap-3 px-4 py-4">
+          <span className="flex size-10 items-center justify-center rounded-full bg-chip text-ink">
+            <BarChart3 className="size-5" strokeWidth={1.7} />
+          </span>
+          <span className="min-w-0 flex-1 text-left">
+            <span className="block text-[17px] font-bold">Статистика</span>
+            <span className="block text-[13px] text-muted">дни вместе, траты по месяцам</span>
+          </span>
+          <ChevronRight className="size-4 text-faint" />
+        </Card>
+
         <Card onClick={() => setCapsOpen(true)} className="flex items-center gap-3 px-4 py-4">
           <span className="flex size-10 items-center justify-center rounded-full bg-chip text-ink">
             <Mail className="size-5" strokeWidth={1.7} />
@@ -73,20 +84,6 @@ function UsPage() {
             <span className="block text-[17px] font-bold">Голосование</span>
             <span className="block text-[13px] text-muted">спросить партнёра тайно</span>
           </span>
-        </Card>
-
-        <Card
-          onClick={() => navigate({ to: "/docs" })}
-          className="flex items-center gap-3 px-4 py-4"
-        >
-          <span className="flex size-10 items-center justify-center rounded-full bg-chip text-ink">
-            <Folder className="size-5" strokeWidth={1.7} />
-          </span>
-          <span className="min-w-0 flex-1 text-left">
-            <span className="block text-[17px] font-bold">Документы</span>
-            <span className="block text-[13px] text-muted">билеты, страховки, карты</span>
-          </span>
-          <ChevronRight className="size-4 text-faint" />
         </Card>
 
         <div className="grid grid-cols-2 overflow-hidden rounded-card bg-surface shadow-card">
@@ -108,23 +105,16 @@ function UsPage() {
           </div>
         </div>
 
-        <div className="rounded-card bg-surface px-5 py-5 shadow-card">
-          <div className="mb-4 flex items-center justify-between">
-            <p className="text-[12px] font-medium uppercase tracking-[0.12em] text-muted">Наш {year}-й</p>
-            <span className="text-[14px] font-semibold text-link">Смотреть</span>
-          </div>
-          <div className="grid grid-cols-4 gap-2 text-center">
-            <Stat n={fulfilled} label={"хотелок исполнено"} />
-            <Stat n={trips} label={"поездки вдвоём"} />
-            <Stat n={closedPlans} label={"плана закрыто"} />
-            <Stat n={docs.length} label={"файлов добавлено"} />
-          </div>
+        <div className="grid grid-cols-3 overflow-hidden rounded-card bg-surface px-2 py-5 shadow-card">
+          <Stat n={fulfilled} label="хотелок" />
+          <Stat n={trips} label="поездок" />
+          <Stat n={closedPlans} label="планов" />
         </div>
 
         <div className="grid grid-cols-3 overflow-hidden rounded-card bg-surface px-2 py-5 shadow-card">
-          <Stat n={doneTasks} label="задач сделано" />
+          <Stat n={doneTasks} label="задач" />
           <Stat n={votes.length} label="голосований" />
-          <Stat n={openedCaps} label="капсул открыто" />
+          <Stat n={openedCaps} label="капсул" />
         </div>
 
         <p className="mt-3 px-1 text-[12px] font-semibold uppercase tracking-[0.12em] text-muted">Профили</p>
@@ -151,11 +141,13 @@ function UsPage() {
             {format(new Date(startedAt + "T12:00:00"), "d MMMM yyyy", { locale: ru })}
           </p>
           <p className="mt-1 text-[13px] text-muted">
-            Через {until} {plural(until, "день", "дня", "дней")} — {untilAnniversaryLabel(startedAt).replace("до ", "")}
+            Через {until} {plural(until, "день", "дня", "дней")} —{" "}
+            {untilAnniversaryLabel(startedAt).replace("до ", "")}
           </p>
         </Card>
       </div>
 
+      <StatsSheet open={statsOpen} onOpenChange={setStatsOpen} />
       <CapsulesSheet open={capsOpen} onOpenChange={setCapsOpen} />
       <VotesSheet open={voteOpen} onOpenChange={setVoteOpen} />
       {editing ? (
@@ -191,6 +183,93 @@ function Stat({ n, label }: { n: number; label: string }) {
       <p className="text-[28px] font-extrabold leading-none tabular">{n}</p>
       <p className="mt-2 text-[11px] leading-snug text-muted">{label}</p>
     </div>
+  );
+}
+
+function StatsSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  const startedAt = useAppStore((s) => s.startedAt);
+  const expenses = useAppStore((s) => s.expenses);
+  const together = daysTogether(startedAt);
+  const until = daysUntil(nextAnniversary(startedAt));
+  const untilLines = untilAnniversaryLines(startedAt);
+
+  const months = useMemo(() => monthlyExpenseStats(expenses), [expenses]);
+  const cats = useMemo(() => categoryStats(expenses), [expenses]);
+  const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange} title="Статистика">
+      <div className="flex flex-col gap-5">
+        <section>
+          <p className="mb-3 text-[12px] font-semibold uppercase tracking-[0.12em] text-muted">Пара</p>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-card bg-chip px-4 py-4">
+              <p className="text-[28px] font-extrabold leading-none tabular">{together}</p>
+              <p className="mt-2 text-[12px] text-muted">
+                {plural(together, "день", "дня", "дней")} вместе
+              </p>
+            </div>
+            <div className="rounded-card bg-chip px-4 py-4">
+              <p className="text-[28px] font-extrabold leading-none text-danger tabular">{until}</p>
+              <p className="mt-2 text-[12px] text-muted">
+                до {untilLines.ordinal} {untilLines.rest}
+              </p>
+            </div>
+          </div>
+          <p className="mt-3 text-[13px] text-muted">
+            Вместе с {format(new Date(startedAt + "T12:00:00"), "d MMMM yyyy", { locale: ru })}
+          </p>
+        </section>
+
+        <section>
+          <p className="mb-1 text-[12px] font-semibold uppercase tracking-[0.12em] text-muted">
+            Общие траты
+          </p>
+          <p className="mb-3 text-[22px] font-extrabold tabular">{formatRub(totalSpent)}</p>
+
+          {months.length === 0 ? (
+            <p className="text-[14px] text-muted">Пока нет записанных покупок</p>
+          ) : (
+            <>
+              <p className="mb-2 text-[13px] font-semibold text-ink-soft">По месяцам</p>
+              <ul className="mb-4 flex flex-col gap-2">
+                {months.map((m) => (
+                  <li
+                    key={m.key}
+                    className="flex items-center justify-between rounded-card bg-chip px-3 py-2.5"
+                  >
+                    <span className="text-[14px] font-semibold">{m.label}</span>
+                    <span className="text-[14px] font-bold tabular">{formatRub(m.amount)}</span>
+                  </li>
+                ))}
+              </ul>
+
+              {cats.length > 0 ? (
+                <>
+                  <p className="mb-2 text-[13px] font-semibold text-ink-soft">По категориям</p>
+                  <ul className="flex flex-col gap-3">
+                    {cats.map((c) => (
+                      <li key={c.id}>
+                        <div className="mb-1 flex items-center justify-between gap-2">
+                          <span className="text-[14px] font-semibold">{c.label}</span>
+                          <span className="text-[14px] font-bold tabular">{formatRub(c.amount)}</span>
+                        </div>
+                        <div className="h-1.5 overflow-hidden rounded-full bg-chip">
+                          <div
+                            className="h-full rounded-full bg-rose"
+                            style={{ width: `${Math.max(4, Math.round(c.share * 100))}%` }}
+                          />
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : null}
+            </>
+          )}
+        </section>
+      </div>
+    </Sheet>
   );
 }
 
@@ -323,12 +402,7 @@ function VotesSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (v: b
         </Button>
       </Sheet>
       <ComposeVote open={compose} onOpenChange={setCompose} />
-      {active ? (
-        <VoteDetail
-          voteId={active}
-          onClose={() => setActive(null)}
-        />
-      ) : null}
+      {active ? <VoteDetail voteId={active} onClose={() => setActive(null)} /> : null}
     </>
   );
 }
