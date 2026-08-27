@@ -1,4 +1,4 @@
-import type { ExpenseItem, PartnerId } from "./types";
+import type { ExpenseItem, Gender, PartnerId } from "./types";
 
 /** Format rubles for display, e.g. 1 250 ₽ */
 export function formatRub(amount: number): string {
@@ -33,10 +33,20 @@ export function parseAmountInput(raw: string): number | null {
   return Math.round(n * 100) / 100;
 }
 
-/** Neutral wording without gendered verb. */
+function owesVerb(gender: Gender | undefined): string {
+  if (gender === "female") return "должна";
+  if (gender === "male") return "должен";
+  return "должен(а)";
+}
+
+/**
+ * Clear wording: "Андрей должен Лизе" — who owes whom, no arrows.
+ * `headline` is the amount; `detail` is the full sentence.
+ */
 export function balanceText(
   balance: number,
   names: Record<PartnerId, string>,
+  genders?: Partial<Record<PartnerId, Gender>>,
 ): { headline: string; detail: string; even: boolean } {
   if (Math.abs(balance) < 0.5) {
     return {
@@ -45,16 +55,14 @@ export function balanceText(
       even: true,
     };
   }
-  if (balance > 0) {
-    return {
-      headline: formatRub(balance),
-      detail: `${names.b} → ${names.a}`,
-      even: false,
-    };
-  }
+  // balance > 0 → b owes a; balance < 0 → a owes b
+  const debtor: PartnerId = balance > 0 ? "b" : "a";
+  const creditor: PartnerId = balance > 0 ? "a" : "b";
+  const amount = Math.abs(balance);
+  const verb = owesVerb(genders?.[debtor]);
   return {
-    headline: formatRub(-balance),
-    detail: `${names.a} → ${names.b}`,
+    headline: formatRub(amount),
+    detail: `${names[debtor]} ${verb} ${names[creditor]}`,
     even: false,
   };
 }
