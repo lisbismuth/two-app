@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { advanceDueDate, normalizeRepeat } from "./task-repeat";
 import type {
   CalEvent,
   Capsule,
@@ -10,6 +11,7 @@ import type {
   PartnerId,
   PlanItem,
   TaskItem,
+  TaskRepeat,
   Vote,
   WishItem,
 } from "./types";
@@ -61,7 +63,13 @@ interface AppState {
   updatePartner: (id: PartnerId, patch: Partial<Partner>) => void;
   setStartedAt: (date: string) => void;
 
-  addTask: (input: { title: string; notes?: string; assignee?: TaskItem["assignee"]; dueDate?: string | null }) => void;
+  addTask: (input: {
+    title: string;
+    notes?: string;
+    assignee?: TaskItem["assignee"];
+    dueDate?: string | null;
+    repeat?: TaskRepeat;
+  }) => void;
   updateTask: (id: string, patch: Partial<TaskItem>) => void;
   toggleTask: (id: string) => void;
   deleteTask: (id: string) => void;
@@ -101,7 +109,6 @@ interface AppState {
   }) => void;
   updateExpense: (id: string, patch: Partial<ExpenseItem>) => void;
   deleteExpense: (id: string) => void;
-  /** Mark all open expenses settled — zeros the debt balance. */
   settleBalance: () => void;
 }
 
@@ -119,6 +126,7 @@ export const useAppStore = create<AppState>()(
           notes: "Овощи, хлеб, то самое вино",
           assignee: "none",
           dueDate: "2026-08-25",
+          repeat: "none",
           done: false,
           doneAt: null,
           createdAt: now,
@@ -129,6 +137,7 @@ export const useAppStore = create<AppState>()(
           notes: "",
           assignee: "a",
           dueDate: null,
+          repeat: "none",
           done: false,
           doneAt: null,
           createdAt: now,
@@ -139,6 +148,7 @@ export const useAppStore = create<AppState>()(
           notes: "На двоих, у окна",
           assignee: "b",
           dueDate: "2026-08-29",
+          repeat: "none",
           done: false,
           doneAt: null,
           createdAt: now,
@@ -212,6 +222,7 @@ export const useAppStore = create<AppState>()(
               notes: input.notes?.trim() ?? "",
               assignee: input.assignee ?? "none",
               dueDate: input.dueDate ?? null,
+              repeat: normalizeRepeat(input.repeat ?? "none"),
               done: false,
               doneAt: null,
               createdAt: new Date().toISOString(),
@@ -227,15 +238,24 @@ export const useAppStore = create<AppState>()(
 
       toggleTask: (id) =>
         set((s) => ({
-          tasks: s.tasks.map((t) =>
-            t.id === id
-              ? {
-                  ...t,
-                  done: !t.done,
-                  doneAt: !t.done ? new Date().toISOString() : null,
-                }
-              : t,
-          ),
+          tasks: s.tasks.map((t) => {
+            if (t.id !== id) return t;
+            const repeat = normalizeRepeat(t.repeat);
+            // Completing a recurring task → next occurrence stays open
+            if (!t.done && repeat !== "none") {
+              return {
+                ...t,
+                done: false,
+                doneAt: null,
+                dueDate: advanceDueDate(t.dueDate, repeat),
+              };
+            }
+            return {
+              ...t,
+              done: !t.done,
+              doneAt: !t.done ? new Date().toISOString() : null,
+            };
+          }),
         })),
 
       deleteTask: (id) => set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) })),
