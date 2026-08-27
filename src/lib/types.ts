@@ -2,6 +2,9 @@ export type PartnerId = "a" | "b";
 export type Gender = "female" | "male" | "other";
 export type TaskAssignee = PartnerId | "none";
 
+/** How often a task repeats after completion. */
+export type TaskRepeat = "none" | "daily" | "weekly" | "monthly";
+
 export type ExpenseCategory =
   | "groceries"
   | "cafes"
@@ -24,6 +27,8 @@ export interface TaskItem {
   notes: string;
   assignee: TaskAssignee;
   dueDate: string | null;
+  /** none = one-shot; otherwise advances dueDate on complete. */
+  repeat: TaskRepeat;
   done: boolean;
   doneAt: string | null;
   createdAt: string;
