@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
-import { Check } from "lucide-react";
+import { Check, RotateCcw } from "lucide-react";
 
 import { toast } from "sonner";
 import { Button, EmptyState, Field, Input, Segmented, Sheet, Textarea } from "@/components/ui";
@@ -10,19 +10,52 @@ import { DatePicker } from "@/components/date-picker";
 import { Page, PageHeader } from "@/components/shell";
 import { CalendarPanel } from "@/routes/calendar";
 import { otherId, useAppStore, useMe, usePartner } from "@/lib/store";
-import type { TaskAssignee, TaskItem } from "@/lib/types";
+import { normalizeRepeat, repeatLabel, TASK_REPEAT_OPTIONS } from "@/lib/task-repeat";
+import type { TaskAssignee, TaskItem, TaskRepeat } from "@/lib/types";
 import { cn, todayISO } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({ component: HomePage });
 
 type View = "list" | "calendar";
+type TaskFilter = "all" | "shared" | "me" | "partner" | "done";
 
 function HomePage() {
   const [view, setView] = useState<View>("list");
+  const [filter, setFilter] = useState<TaskFilter>("all");
   const tasks = useAppStore((s) => s.tasks);
+  const currentId = useAppStore((s) => s.currentId);
+  const partners = useAppStore((s) => s.partners);
+  const me = useMe();
+  const partner = usePartner();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<TaskItem | null>(null);
-  const openCount = tasks.filter((t) => !t.done).length;
+
+  const counts = useMemo(() => {
+    const openTasks = tasks.filter((t) => !t.done);
+    return {
+      all: openTasks.length,
+      shared: openTasks.filter((t) => t.assignee === "none").length,
+      me: openTasks.filter((t) => t.assignee === currentId).length,
+      partner: openTasks.filter((t) => t.assignee === otherId(currentId)).length,
+      done: tasks.filter((t) => t.done).length,
+    };
+  }, [tasks, currentId]);
+
+  const filtered = useMemo(() => {
+    if (filter === "all") return tasks.filter((t) => !t.done);
+    if (filter === "shared") return tasks.filter((t) => !t.done && t.assignee === "none");
+    if (filter === "me") return tasks.filter((t) => !t.done && t.assignee === currentId);
+    if (filter === "partner") return tasks.filter((t) => !t.done && t.assignee === otherId(currentId));
+    return tasks.filter((t) => t.done);
+  }, [tasks, filter, currentId]);
+
+  const filterOptions: { value: TaskFilter; label: string; count: number }[] = [
+    { value: "all", label: "Все", count: counts.all },
+    { value: "shared", label: "Общие", count: counts.shared },
+    { value: "me", label: me.name, count: counts.me },
+    { value: "partner", label: partner.name, count: counts.partner },
+    { value: "done", label: "Готово", count: counts.done },
+  ];
 
   return (
     <Page>
@@ -38,7 +71,7 @@ function HomePage() {
         }
       />
 
-      <div className="mb-5">
+      <div className="mb-4">
         <Segmented
           value={view}
           onChange={setView}
@@ -51,52 +84,68 @@ function HomePage() {
 
       {view === "calendar" ? (
         <CalendarPanel />
-      ) : tasks.length === 0 ? (
-        <EmptyState
-          icon={<TasksGlyph />}
-          title="Список дел на двоих"
-          text="Пишите, что нужно сделать. Любой берёт задачу себе — или ставит её партнёру."
-          action={
-            <Button
-              onClick={() => {
-                setEditing(null);
-                setOpen(true);
-              }}
-            >
-              Добавить задачу
-            </Button>
-          }
-          footnote="никто никому не начальник — задачу можно вернуть"
-        />
       ) : (
-        <div className="flex flex-col gap-6">
-          {openCount === 0 ? (
-            <p className="text-center text-[14px] text-muted">Все задачи закрыты. Можно выдохнуть.</p>
-          ) : null}
-          <TaskGroup
-            title="Общие"
-            items={tasks.filter((t) => !t.done && t.assignee === "none")}
-            onEdit={(t) => {
-              setEditing(t);
-              setOpen(true);
-            }}
-          />
-          <AssignedGroups
-            onEdit={(t) => {
-              setEditing(t);
-              setOpen(true);
-            }}
-          />
-          <TaskGroup
-            title="Сделано"
-            items={tasks.filter((t) => t.done)}
-            muted
-            onEdit={(t) => {
-              setEditing(t);
-              setOpen(true);
-            }}
-          />
-        </div>
+        <>
+          <div className="-mx-5 mb-4 flex gap-1.5 overflow-x-auto px-5 pb-0.5">
+            {filterOptions.map((opt) => {
+              const active = filter === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setFilter(opt.value)}
+                  className={cn(
+                    "shrink-0 rounded-full px-3.5 py-2 text-[13px] font-semibold transition-colors",
+                    active ? "bg-ink text-on-ink" : "bg-chip text-ink-soft",
+                  )}
+                >
+                  {opt.label}
+                  {opt.count > 0 ? (
+                    <span className={cn("ml-1.5 tabular", active ? "text-on-ink/70" : "text-faint")}>
+                      {opt.count}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+
+          {tasks.length === 0 ? (
+            <EmptyState
+              icon={<TasksGlyph />}
+              title="Список дел на двоих"
+              text="Пишите, что нужно сделать. Можно задать повтор — задача вернётся сама."
+              action={
+                <Button
+                  onClick={() => {
+                    setEditing(null);
+                    setOpen(true);
+                  }}
+                >
+                  Добавить задачу
+                </Button>
+              }
+              footnote="никто никому не начальник — задачу можно вернуть"
+            />
+          ) : filtered.length === 0 ? (
+            <p className="py-10 text-center text-[14px] text-muted">
+              {filter === "done" ? "Закрытых задач пока нет" : "Здесь пусто — переключите фильтр или добавьте задачу"}
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {filtered.map((t) => (
+                <TaskRow
+                  key={t.id}
+                  task={t}
+                  onEdit={() => {
+                    setEditing(t);
+                    setOpen(true);
+                  }}
+                />
+              ))}
+            </ul>
+          )}
+        </>
       )}
 
       <TaskSheet open={open} onOpenChange={setOpen} editing={editing} />
@@ -104,66 +153,15 @@ function HomePage() {
   );
 }
 
-function AssignedGroups({ onEdit }: { onEdit: (t: TaskItem) => void }) {
-  const partners = useAppStore((s) => s.partners);
-  const tasks = useAppStore((s) => s.tasks);
-  return (
-    <>
-      {(["a", "b"] as const).map((id) => (
-        <TaskGroup
-          key={id}
-          title={partners[id].name}
-          accent={partners[id].color}
-          items={tasks.filter((t) => !t.done && t.assignee === id)}
-          onEdit={onEdit}
-        />
-      ))}
-    </>
-  );
-}
-
-function TaskGroup({
-  title,
-  items,
-  muted,
-  accent,
-  onEdit,
-}: {
-  title: string;
-  items: TaskItem[];
-  muted?: boolean;
-  accent?: string;
-  onEdit: (t: TaskItem) => void;
-}) {
-  if (items.length === 0) return null;
-  return (
-    <section>
-      <div className="mb-2 flex items-center gap-2">
-        {accent ? <span className="size-2 rounded-full" style={{ background: accent }} /> : null}
-        <h2
-          className={cn(
-            "text-[12px] font-semibold uppercase tracking-[0.12em]",
-            muted ? "text-faint" : "text-muted",
-          )}
-        >
-          {title}
-        </h2>
-      </div>
-      <ul className="flex flex-col gap-2">
-        {items.map((t) => (
-          <TaskRow key={t.id} task={t} onEdit={() => onEdit(t)} />
-        ))}
-      </ul>
-    </section>
-  );
-}
-
 function TaskRow({ task, onEdit }: { task: TaskItem; onEdit: () => void }) {
   const toggleTask = useAppStore((s) => s.toggleTask);
   const updateTask = useAppStore((s) => s.updateTask);
+  const partners = useAppStore((s) => s.partners);
   const me = useMe();
   const partner = usePartner();
   const currentId = useAppStore((s) => s.currentId);
+  const repeat = normalizeRepeat(task.repeat);
+  const rLabel = repeatLabel(repeat);
 
   return (
     <li className="rounded-card bg-surface px-3 py-3 shadow-card">
@@ -171,7 +169,12 @@ function TaskRow({ task, onEdit }: { task: TaskItem; onEdit: () => void }) {
         <button
           type="button"
           aria-label={task.done ? "Вернуть" : "Сделано"}
-          onClick={() => toggleTask(task.id)}
+          onClick={() => {
+            toggleTask(task.id);
+            if (!task.done && repeat !== "none") {
+              toast(`Готово · следующее: ${rLabel}`);
+            }
+          }}
           className={cn(
             "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full",
             task.done ? "bg-ink text-on-ink" : "ring-1 ring-faint text-transparent",
@@ -186,11 +189,28 @@ function TaskRow({ task, onEdit }: { task: TaskItem; onEdit: () => void }) {
           {task.notes ? (
             <p className="mt-0.5 line-clamp-1 text-[13px] text-ink-soft">{task.notes}</p>
           ) : null}
-          {task.dueDate ? (
-            <p className="mt-0.5 text-[12px] text-muted">
-              до {format(new Date(task.dueDate + "T12:00:00"), "d MMMM", { locale: ru })}
-            </p>
-          ) : null}
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] text-muted">
+            {task.assignee !== "none" ? (
+              <span className="inline-flex items-center gap-1">
+                <span
+                  className="size-1.5 rounded-full"
+                  style={{ background: partners[task.assignee].color }}
+                />
+                {partners[task.assignee].name}
+              </span>
+            ) : (
+              <span>Общая</span>
+            )}
+            {task.dueDate ? (
+              <span>до {format(new Date(task.dueDate + "T12:00:00"), "d MMM", { locale: ru })}</span>
+            ) : null}
+            {rLabel ? (
+              <span className="inline-flex items-center gap-0.5">
+                <RotateCcw className="size-3" strokeWidth={2} />
+                {rLabel}
+              </span>
+            ) : null}
+          </p>
         </button>
       </div>
       {!task.done ? (
@@ -227,7 +247,7 @@ function TaskRow({ task, onEdit }: { task: TaskItem; onEdit: () => void }) {
                 toast("Задачу вернули в общие");
               }}
             >
-              Вернуть
+              В общие
             </Button>
           )}
         </div>
@@ -256,6 +276,7 @@ function TaskSheet({
   const [notes, setNotes] = useState("");
   const [assignee, setAssignee] = useState<TaskAssignee>("none");
   const [dueDate, setDueDate] = useState("");
+  const [repeat, setRepeat] = useState<TaskRepeat>("none");
 
   useEffect(() => {
     if (!open) return;
@@ -263,6 +284,7 @@ function TaskSheet({
     setNotes(editing?.notes ?? "");
     setAssignee(editing?.assignee ?? "none");
     setDueDate(editing?.dueDate ?? "");
+    setRepeat(normalizeRepeat(editing?.repeat ?? "none"));
   }, [open, editing]);
 
   return (
@@ -273,10 +295,16 @@ function TaskSheet({
           e.preventDefault();
           if (!title.trim()) return;
           if (editing) {
-            updateTask(editing.id, { title: title.trim(), notes, assignee, dueDate: dueDate || null });
+            updateTask(editing.id, {
+              title: title.trim(),
+              notes,
+              assignee,
+              dueDate: dueDate || null,
+              repeat,
+            });
             toast("Сохранили");
           } else {
-            addTask({ title, notes, assignee, dueDate: dueDate || null });
+            addTask({ title, notes, assignee, dueDate: dueDate || null, repeat });
             toast("Задача в списке");
           }
           onOpenChange(false);
@@ -319,6 +347,28 @@ function TaskSheet({
             placeholder="Без срока"
             allowClear
           />
+        </Field>
+        <Field label="Повтор">
+          <div className="flex flex-wrap gap-1.5">
+            {TASK_REPEAT_OPTIONS.map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setRepeat(opt.id)}
+                className={cn(
+                  "h-9 rounded-full px-3 text-[13px] font-semibold",
+                  repeat === opt.id ? "bg-ink text-on-ink" : "bg-chip text-ink-soft",
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {repeat !== "none" ? (
+            <p className="mt-2 text-[12px] text-muted">
+              После «готово» задача останется открытой, срок сдвинется вперёд.
+            </p>
+          ) : null}
         </Field>
         <Button type="submit" className="mt-2">
           {editing ? "Сохранить" : "Добавить задачу"}
