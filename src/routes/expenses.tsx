@@ -39,7 +39,11 @@ function ExpensesPage() {
   );
 
   const balance = netBalance(expenses);
-  const bal = balanceText(balance, { a: partners.a.name, b: partners.b.name });
+  const bal = balanceText(
+    balance,
+    { a: partners.a.name, b: partners.b.name },
+    { a: partners.a.gender, b: partners.b.gender },
+  );
 
   const total = expenses.reduce((s, e) => s + e.amount, 0);
   const stats = useMemo(() => categoryStats(expenses), [expenses]);
@@ -59,7 +63,7 @@ function ExpensesPage() {
         <p className="mt-2 text-[36px] font-extrabold leading-none tracking-tight tabular">
           {bal.headline}
         </p>
-        <p className="mt-2 text-[14px] text-muted">{bal.detail}</p>
+        <p className="mt-2 text-[15px] font-semibold text-ink">{bal.detail}</p>
         {total > 0 ? (
           <p className="mt-3 text-[13px] text-faint">Всего общих покупок: {formatRub(total)}</p>
         ) : null}
