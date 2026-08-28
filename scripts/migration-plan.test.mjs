@@ -58,8 +58,14 @@ test("non-.sql entries are dropped (readdir also yields the auth/ directory)", (
 
 test("the auth schema ships outside the globbed directory", () => {
   const migrationsDir = join(projectRoot(), "migrations");
-  assert.deepEqual(pendingMigrations(readdirSync(migrationsDir), []), []);
+  // Auth schema must live under migrations/auth/ and only be copied up when
+  // sign-in is turned on. App-specific (non-auth) migrations at the top level
+  // are fine for database-on / auth-off workspaces.
   assert.ok(readdirSync(join(migrationsDir, "auth")).includes("0001_auth.sql"));
+  const topLevelAuthSql = readdirSync(migrationsDir).filter(
+    (n) => n.endsWith(".sql") && /auth/i.test(n),
+  );
+  assert.deepEqual(topLevelAuthSql, []);
 });
 
 test("this workspace's auth schema copy is byte-identical to its source", () => {
