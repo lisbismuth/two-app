@@ -4,16 +4,18 @@
 
 <p align="center">
   <a href="https://two-lissy1.vercel.app/?demo=true" target="_blank" rel="noopener noreferrer">
-    <img src="https://img.shields.io/badge/%E2%9C%A8_Try_Demo-Live_Preview-6366f1?style=for-the-badge" alt="Try Live Demo">
+    <img src="https://img.shields.io/badge/%E2%9C%A8_Try_Demo-Live_Preview-222222?style=for-the-badge&labelColor=111111" alt="Try Live Demo">
   </a>
 </p>
 
 > 💡 **Демо-режим (Guest Mode):** нажмите кнопку выше или откройте приложение с параметром `?demo=true` (или `?guest=true`), чтобы покрутить интерфейс с заготовленными данными пары Ани и Игоря — задачи, траты, хотелки, голосование. Только просмотр, без записи на сервер.
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![React](https://img.shields.io/badge/React-19-61dafb.svg)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)
-![Vite](https://img.shields.io/badge/Vite-8-646cff.svg)
+<p align="center">
+  <img src="https://img.shields.io/badge/license-MIT-18181b?style=flat-square&labelColor=f4f4f5" alt="License">
+  <img src="https://img.shields.io/badge/React-19-18181b?style=flat-square&labelColor=f4f4f5" alt="React">
+  <img src="https://img.shields.io/badge/TypeScript-5.7-18181b?style=flat-square&labelColor=f4f4f5" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Vite-8-18181b?style=flat-square&labelColor=f4f4f5" alt="Vite">
+</p>
 
 Альтернатива громоздким сервисам учёта: простые 50/50 траты, совместные списки и визуальные карточки для пары — без подписок, рекламы и лишних аккаунтов.
 
