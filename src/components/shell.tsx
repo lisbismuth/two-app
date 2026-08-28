@@ -12,6 +12,8 @@ import { RedirectToSignIn, UserButton } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { SIGN_IN_PATH } from "@/lib/auth/gates";
 import { partnerIdFromEmail } from "@/lib/partners-auth";
+import { exitGuestMode, isGuestMode } from "@/lib/guest";
+import { Button } from "@/components/ui";
 
 const TABS = [
   { to: "/", label: "Дела", icon: ListTodo, end: true },
@@ -21,7 +23,6 @@ const TABS = [
   { to: "/us", label: "Мы", icon: Heart, end: false },
 ] as const;
 
-/** Height reserved under content so fixed tab bar doesn't cover the last items. */
 const TAB_BAR_PAD = "pb-[calc(4.25rem+env(safe-area-inset-bottom))]";
 
 export function HydrationGate({ children }: { children: ReactNode }) {
@@ -51,6 +52,7 @@ function PartnerFromAuth() {
   const setCurrentId = useAppStore((s) => s.setCurrentId);
 
   useEffect(() => {
+    if (isGuestMode()) return;
     const partnerId = partnerIdFromEmail(user?.primaryEmail);
     if (partnerId && partnerId !== currentId) {
       setCurrentId(partnerId);
@@ -60,11 +62,37 @@ function PartnerFromAuth() {
   return null;
 }
 
+function GuestBanner() {
+  if (!isGuestMode()) return null;
+  return (
+    <div className="sticky top-0 z-30 border-b border-line bg-chip/95 px-4 py-2 backdrop-blur-md">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[13px] font-medium text-ink-soft">
+          Гостевой режим · только просмотр · демо-данные
+        </p>
+        <Button
+          variant="ghost"
+          size="md"
+          className="shrink-0 !h-8 !px-2 text-[13px]"
+          onClick={() => {
+            exitGuestMode();
+            window.location.href = SIGN_IN_PATH;
+          }}
+        >
+          Войти
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function AppShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isLogin = pathname === SIGN_IN_PATH || pathname.startsWith("/login");
   const { user, isPending } = useCurrentUserState();
   const setupComplete = useAppStore((s) => s.setupComplete);
+  const guest = typeof window !== "undefined" && isGuestMode();
+
   useServerSync();
 
   if (isLogin) {
@@ -84,8 +112,8 @@ export function AppShell() {
   }
 
   if (authEnabled) {
-    if (isPending) return <Splash />;
-    if (!user) return <RedirectToSignIn />;
+    if (isPending && !guest) return <Splash />;
+    if (!user && !guest) return <RedirectToSignIn />;
   }
 
   return (
@@ -95,6 +123,7 @@ export function AppShell() {
         <div className="relative flex min-h-dvh w-full max-w-lg flex-col overflow-x-hidden bg-bg sm:shadow-float">
           {setupComplete ? (
             <>
+              <GuestBanner />
               <div className={cn("flex flex-1 flex-col", TAB_BAR_PAD)}>
                 <Outlet />
               </div>
@@ -121,9 +150,7 @@ function TabBar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <nav
-      className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-lg border-t border-line bg-bg/95 backdrop-blur-md pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1.5"
-    >
+    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-lg border-t border-line bg-bg/95 backdrop-blur-md pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1.5">
       <ul className="grid grid-cols-5">
         {TABS.map((tab) => {
           const active = tab.end
@@ -177,6 +204,9 @@ export function PageHeader({
   extra?: ReactNode;
   kickerUpper?: boolean;
 }) {
+  const guest = typeof window !== "undefined" && isGuestMode();
+  const effectiveOnAdd = guest ? undefined : onAdd;
+
   return (
     <header className="mb-5 pt-1">
       {kicker ? (
@@ -190,13 +220,15 @@ export function PageHeader({
         </p>
       ) : null}
       <div className="flex items-center justify-between gap-3">
-        <h1 className="shrink-0 text-[32px] font-extrabold leading-none tracking-tight text-ink">{title}</h1>
+        <h1 className="shrink-0 text-[32px] font-extrabold leading-none tracking-tight text-ink">
+          {title}
+        </h1>
         <div className="flex shrink-0 items-center gap-1">
           {extra}
-          {onAdd ? (
+          {effectiveOnAdd ? (
             <button
               type="button"
-              onClick={onAdd}
+              onClick={effectiveOnAdd}
               aria-label={addLabel}
               className="flex size-11 items-center justify-center rounded-full bg-surface text-ink shadow-plus transition-transform duration-150 active:scale-[0.96]"
             >
@@ -229,6 +261,7 @@ function HeaderAvatar() {
 
 export function AccountRow() {
   if (!authEnabled) return null;
+  if (isGuestMode()) return null;
   return (
     <div className="rounded-card bg-chip px-3 py-3">
       <UserButton />
