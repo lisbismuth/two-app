@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="168" viewBox="0 0 640 168" role="img" aria-label="Демо-режим · Guest Mode">
+  <rect width="640" height="168" rx="16" ry="16" fill="#F7F5F1" stroke="#E8E4DC" stroke-width="1"/>
+  <text x="28" y="40" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="16" font-weight="700" fill="#1a1a1a">Демо-режим · Guest Mode</text>
+  <text x="28" y="72" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="14" fill="#3f3f46">Нажмите кнопку выше или откройте приложение с параметром</text>
+  <text x="28" y="94" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="14" fill="#3f3f46">?demo=true / ?guest=true — данные пары Ани и Игоря (задачи, траты, хотелки).</text>
+  <text x="28" y="132" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="13" fill="#71717a">Только просмотр · без записи на сервер · локальный snapshot</text>
+</svg>

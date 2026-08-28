@@ -18,24 +18,11 @@
   <img src="https://img.shields.io/badge/8-1a1a1a?style=flat-square&label=Vite&labelColor=f3f1ec&color=1a1a1a" alt="Vite 8">
 </p>
 
-<table align="center">
-  <tr>
-    <td bgcolor="#F7F5F1" width="640" style="border: 1px solid #E8E4DC; border-radius: 16px; padding: 20px 24px;">
-      <p style="margin: 0 0 10px 0; font-size: 16px;"><strong>Демо-режим</strong> · Guest Mode</p>
-      <p style="margin: 0 0 12px 0; color: #3f3f46; line-height: 1.55;">
-        Нажмите кнопку выше или откройте приложение с параметром
-        <code>?demo=true</code> (или <code>?guest=true</code>),
-        чтобы покрутить интерфейс с данными пары <strong>Ани и Игоря</strong> —
-        задачи, траты, хотелки, голосование.
-      </p>
-      <p style="margin: 0; color: #71717a; font-size: 14px;">
-        Только просмотр · без записи на сервер · локальный snapshot
-      </p>
-    </td>
-  </tr>
-</table>
-
-<br>
+<p align="center">
+  <a href="https://two-lissy1.vercel.app/?demo=true" target="_blank" rel="noopener noreferrer">
+    <img src="./screenshots/demo-card.svg" width="640" alt="Демо-режим · Guest Mode — откройте с ?demo=true">
+  </a>
+</p>
 
 Альтернатива громоздким сервисам учёта: простые 50/50 траты, совместные списки и визуальные карточки для пары — без подписок, рекламы и лишних аккаунтов.
 
