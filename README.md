@@ -163,6 +163,7 @@ src/
 migrations/         # SQL
 public/             # иконки PWA и статика
 screenshots/        # скриншоты для README
+scripts/            # CI-инварианты, PWA-плагин, миграции
 ```
 
 ---
@@ -174,6 +175,52 @@ screenshots/        # скриншоты для README
 - **Private Data:** проект рассчитан на приватное использование одной парой (одна JSON-запись в БД, не multi-tenant SaaS).
 - Голосования скрывают чужой выбор в UI до завершения; на сервере данные хранятся в общем документе (доверие между партнёрами).
 - **Guest / demo:** локальный snapshot, без записи в `/api/state`.
+
+---
+
+## CI/CD & Testing Architecture
+
+Проект содержит автоматизированный suite интеграционных тестов (`node --test` / `npm test`), проверяющий сборку, метаданные PWA и корректность конфигураций среды. CI на GitHub Actions гоняет typecheck, lint и этот suite на каждый push в `main`.
+
+### Запуск тестов локально
+
+```bash
+npm test
+```
+
+Ключевые скрипты и тесты лежат в `scripts/`:
+
+| Файл | За что отвечает |
+|------|-----------------|
+| `grok-pwa-plugin.mjs` + `grok-pwa-shared.mjs` | Инъекция PWA / Open Graph meta в HTML |
+| `grok-pwa-plugin.test.mjs` | Приоритет `og:title`, изоляция от FS проекта |
+| `with-app-env.mjs` + `with-app-env.test.mjs` | Чтение `.grok/app-env.json`, merge env |
+| `check-auth-invariant.mjs` + `.test.mjs` | Согласованность `VITE_AUTH_ENABLED` и auth-кода |
+| `migration-plan.mjs` + `.test.mjs` | Какие SQL-миграции попадают в build |
+
+### Ключевые инварианты CI
+
+#### 1. PWA & Open Graph Meta Injection (`grok-pwa-shared.mjs`)
+
+При динамической трансформации HTML-потока (SSR / PWA-инжектор) соблюдается строго определённый приоритет для заголовка страницы (`og:title` / `<title>`):
+
+1. `src/lib/og/site.json` → `site.title` (у «Двое» это кастомное имя)
+2. Заголовок страницы (`<title>` из HTML-документа)
+3. Имя приложения из хоста (`appNameFromHost`)
+4. Дефолтное имя (`DEFAULT_APP_NAME`)
+
+**Архитектурный нюанс:** `createHeadInjector` **не** фиксирует `appName` на этапе инициализации контекста. Заголовок извлекается непосредственно из входящего HTML-потока (`titleFromDocument`). Так предотвращается подмена заголовков динамических страниц дефолтным именем приложения.
+
+Тесты PWA дополнительно изолируют `cwd` и передают `site: {}`, чтобы не подхватывать `site.json` текущего репозитория и не ломать инварианты шаблона на кастомных проектах.
+
+#### 2. Конфигурация среды и авторизация (`app-env`)
+
+- Основной конфигурационный файл окружения: `.grok/app-env.json` (флаги вроде `VITE_AUTH_ENABLED`, `deploy.database`).
+- Схема Better Auth хранится в `migrations/auth/`. При `VITE_AUTH_ENABLED=true` соответствующая миграция должна присутствовать и на верхнем уровне `migrations/` (ожидание template-тестов / migration-plan).
+- `check-auth-invariant` сверяет флаг в `app-env` с наличием auth-кода и миграций — рассинхрон роняет CI.
+- Guest Mode (`src/lib/guest.ts`, `?demo=true` / `?guest=true`) держит демо-snapshot только в `sessionStorage` / локальном Zustand и **не** пишет в `/api/state`, чтобы не смешивать демо-данные с боевой парой.
+
+Если меняете branding (`site.json`), auth-флаг или структуру миграций — прогоните `npm test` до пуша: suite как раз ловит типичные рассинхроны шаблона и кастомизации.
 
 ---
 
