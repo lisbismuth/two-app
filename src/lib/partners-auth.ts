@@ -1,8 +1,11 @@
 import type { PartnerId } from "./types";
 
 /**
- * Hardcoded couple accounts: only these emails may sign in / sign up.
- * Email → in-app partner (Лиза = a, Андрей = b).
+ * Couple accounts: only these emails may sign in / sign up.
+ * Email → partner id (a / b).
+ *
+ * Before making the repo public, move real emails to Vercel env
+ * (see README / instructions). Do not commit personal addresses.
  */
 export const PARTNER_BY_EMAIL: Record<string, PartnerId> = {
   "lis.gu@icloud.com": "a",
@@ -11,9 +14,10 @@ export const PARTNER_BY_EMAIL: Record<string, PartnerId> = {
 
 export const ALLOWED_EMAILS = Object.keys(PARTNER_BY_EMAIL);
 
+/** Placeholder names in source; live names can still live in synced store / DB. */
 export const PARTNER_DISPLAY_NAME: Record<PartnerId, string> = {
-  a: "Лиза",
-  b: "Андрей",
+  a: "Аня",
+  b: "Игорь",
 };
 
 export function normalizeEmail(email: string): string {
