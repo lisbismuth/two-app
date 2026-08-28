@@ -1,23 +1,37 @@
 import type { PartnerId } from "./types";
 
 /**
- * Couple accounts: only these emails may sign in / sign up.
- * Email → partner id (a / b).
+ * Partner allowlist and display names.
  *
- * Before making the repo public, move real emails to Vercel env
- * (see README / instructions). Do not commit personal addresses.
+ * Emails come from server env (Vercel): PARTNER_EMAIL_A, PARTNER_EMAIL_B.
+ * Do not put real emails in git.
+ *
+ * Names stay in code in Russian — Vercel env UI is awkward with Cyrillic.
+ * Optional overrides: PARTNER_NAME_A, PARTNER_NAME_B (any language).
  */
-export const PARTNER_BY_EMAIL: Record<string, PartnerId> = {
-  "lis.gu@icloud.com": "a",
-  "79502467020@mail.ru": "b",
-};
+
+function env(key: string): string | undefined {
+  const value = process.env[key]?.trim();
+  return value ? value : undefined;
+}
+
+function buildPartnerByEmail(): Record<string, PartnerId> {
+  const map: Record<string, PartnerId> = {};
+  const a = env("PARTNER_EMAIL_A")?.toLowerCase();
+  const b = env("PARTNER_EMAIL_B")?.toLowerCase();
+  if (a) map[a] = "a";
+  if (b) map[b] = "b";
+  return map;
+}
+
+/** Built at module load from env. Empty map if env not set (nobody can register). */
+export const PARTNER_BY_EMAIL: Record<string, PartnerId> = buildPartnerByEmail();
 
 export const ALLOWED_EMAILS = Object.keys(PARTNER_BY_EMAIL);
 
-/** Placeholder names in source; live names can still live in synced store / DB. */
 export const PARTNER_DISPLAY_NAME: Record<PartnerId, string> = {
-  a: "Аня",
-  b: "Игорь",
+  a: env("PARTNER_NAME_A") ?? "Лиза",
+  b: env("PARTNER_NAME_B") ?? "Андрей",
 };
 
 export function normalizeEmail(email: string): string {
@@ -25,7 +39,12 @@ export function normalizeEmail(email: string): string {
 }
 
 export function isAllowedEmail(email: string): boolean {
-  return normalizeEmail(email) in PARTNER_BY_EMAIL;
+  const map = PARTNER_BY_EMAIL;
+  if (Object.keys(map).length === 0) {
+    // Fail closed when allowlist is empty (env not configured).
+    return false;
+  }
+  return normalizeEmail(email) in map;
 }
 
 export function partnerIdFromEmail(email: string | null | undefined): PartnerId | null {
