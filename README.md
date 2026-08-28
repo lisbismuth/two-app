@@ -1,21 +1,38 @@
 # Двое
 
-> Минималистичное PWA-приложение для пары: общие задачи, календарь, вишлисты, скидочные карты, учёт трат 50/50 и личная статистика.
+Минималистичное PWA-приложение для пары: общие задачи, календарь, вишлисты, скидочные карты, учёт трат 50/50 и личная статистика.
 
 <p align="center">
   <a href="https://two-lissy1.vercel.app/?demo=true" target="_blank" rel="noopener noreferrer">
-    <img src="https://img.shields.io/badge/✨_Try_Demo-Live_Preview-111111?style=for-the-badge&logo=vercel&logoColor=white" alt="Try Live Demo">
+    <img src="https://img.shields.io/badge/%E2%9C%A8_Live_Demo-Try_App-18181b?style=for-the-badge&labelColor=18181b&color=18181b" alt="Try Live Demo">
   </a>
 </p>
 
-> 💡 **Демо-режим (Guest Mode):** нажмите кнопку выше или откройте приложение с параметром `?demo=true` (или `?guest=true`), чтобы покрутить интерфейс с заготовленными данными пары Ани и Игоря — задачи, траты, хотелки, голосование. Только просмотр, без записи на сервер.
-
 <p align="center">
-  <img src="https://img.shields.io/badge/license-MIT-18181b?style=flat-square&labelColor=f4f4f5" alt="License">
-  <img src="https://img.shields.io/badge/React-19-18181b?style=flat-square&labelColor=f4f4f5" alt="React">
-  <img src="https://img.shields.io/badge/TypeScript-5.7-18181b?style=flat-square&labelColor=f4f4f5" alt="TypeScript">
-  <img src="https://img.shields.io/badge/Vite-8-18181b?style=flat-square&labelColor=f4f4f5" alt="Vite">
+  <img src="https://img.shields.io/badge/license-MIT-18181b?style=flat-square&labelColor=f4f4f5&color=18181b" alt="License">
+  &nbsp;
+  <img src="https://img.shields.io/badge/React-19-18181b?style=flat-square&labelColor=f4f4f5&color=18181b" alt="React">
+  &nbsp;
+  <img src="https://img.shields.io/badge/TypeScript-5.7-18181b?style=flat-square&labelColor=f4f4f5&color=18181b" alt="TypeScript">
+  &nbsp;
+  <img src="https://img.shields.io/badge/Vite-8-18181b?style=flat-square&labelColor=f4f4f5&color=18181b" alt="Vite">
 </p>
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="left" width="720">
+
+**Демо-режим (Guest Mode)**
+
+Нажмите кнопку выше или откройте приложение с параметром `?demo=true` (или `?guest=true`), чтобы покрутить интерфейс с заготовленными данными пары **Ани и Игоря** — задачи, траты, хотелки, голосование.
+
+Только просмотр · без записи на сервер · локальный snapshot
+
+      </td>
+    </tr>
+  </table>
+</div>
 
 Альтернатива громоздким сервисам учёта: простые 50/50 траты, совместные списки и визуальные карточки для пары — без подписок, рекламы и лишних аккаунтов.
 
