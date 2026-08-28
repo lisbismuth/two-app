@@ -56,23 +56,19 @@ test("non-.sql entries are dropped (readdir also yields the auth/ directory)", (
   assert.deepEqual(pendingMigrations(["auth", "README.md"], []), []);
 });
 
-test("the auth schema ships outside the globbed directory", () => {
+test("auth is on: schema is copied into the globbed directory", () => {
   const migrationsDir = join(projectRoot(), "migrations");
-  // Auth schema must live under migrations/auth/ and only be copied up when
-  // sign-in is turned on. App-specific (non-auth) migrations at the top level
-  // are fine for database-on / auth-off workspaces.
+  // Source of truth stays under migrations/auth/; the auth-on workspace also
+  // keeps a verbatim copy at the top level so the migrator applies it.
   assert.ok(readdirSync(join(migrationsDir, "auth")).includes("0001_auth.sql"));
-  const topLevelAuthSql = readdirSync(migrationsDir).filter(
-    (n) => n.endsWith(".sql") && /auth/i.test(n),
-  );
-  assert.deepEqual(topLevelAuthSql, []);
+  assert.ok(readdirSync(migrationsDir).includes("0001_auth.sql"));
 });
 
 test("this workspace's auth schema copy is byte-identical to its source", () => {
   // An edited copy diverges silently: basename keying skips it on a database
   // that already ran the original, and applies it on a fresh PGLite preview.
   const pair = authSchemaCopy(projectRoot());
-  if (pair === null) return; // sign-in off — nothing has been copied up
+  assert.ok(pair, "auth is on — migrations/0001_auth.sql must exist");
   assert.equal(
     pair.copy,
     pair.source,
