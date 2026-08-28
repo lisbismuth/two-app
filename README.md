@@ -4,18 +4,12 @@
 
 <p align="center">
   <a href="https://two-lissy1.vercel.app/?demo=true" target="_blank" rel="noopener noreferrer">
-    <img src="https://img.shields.io/badge/%E2%9C%A8%20Live%20Demo%20%C2%B7%20Try%20App-1a1a1a?style=for-the-badge&labelColor=1a1a1a&color=1a1a1a" alt="Live Demo · Try App">
+    <img src="./screenshots/demo-button.svg" alt="Live Demo · Try App" height="40">
   </a>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/MIT-1a1a1a?style=flat-square&label=license&labelColor=f3f1ec&color=1a1a1a" alt="License MIT">
-  &nbsp;
-  <img src="https://img.shields.io/badge/19-1a1a1a?style=flat-square&label=React&labelColor=f3f1ec&color=1a1a1a" alt="React 19">
-  &nbsp;
-  <img src="https://img.shields.io/badge/5.7-1a1a1a?style=flat-square&label=TypeScript&labelColor=f3f1ec&color=1a1a1a" alt="TypeScript 5.7">
-  &nbsp;
-  <img src="https://img.shields.io/badge/8-1a1a1a?style=flat-square&label=Vite&labelColor=f3f1ec&color=1a1a1a" alt="Vite 8">
+  <img src="./screenshots/tech-chips.svg" alt="MIT · React 19 · TypeScript 5.7 · Vite 8" height="28">
 </p>
 
 <p align="center">

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="28" viewBox="0 0 420 28" role="img" aria-label="MIT · React 19 · TypeScript 5.7 · Vite 8">
+  <!-- license MIT -->
+  <g transform="translate(0,0)">
+    <rect width="78" height="28" rx="8" ry="8" fill="#F3F1EC"/>
+    <text x="10" y="18" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="12" fill="#71717a">license</text>
+    <rect x="52" y="4" width="22" height="20" rx="5" ry="5" fill="#1a1a1a"/>
+    <text x="63" y="18" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="11" font-weight="600" fill="#ffffff">MIT</text>
+  </g>
+  <!-- React 19 -->
+  <g transform="translate(90,0)">
+    <rect width="78" height="28" rx="8" ry="8" fill="#F3F1EC"/>
+    <text x="10" y="18" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="12" fill="#71717a">React</text>
+    <rect x="50" y="4" width="24" height="20" rx="5" ry="5" fill="#1a1a1a"/>
+    <text x="62" y="18" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="11" font-weight="600" fill="#ffffff">19</text>
+  </g>
+  <!-- TypeScript 5.7 -->
+  <g transform="translate(180,0)">
+    <rect width="118" height="28" rx="8" ry="8" fill="#F3F1EC"/>
+    <text x="10" y="18" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="12" fill="#71717a">TypeScript</text>
+    <rect x="82" y="4" width="30" height="20" rx="5" ry="5" fill="#1a1a1a"/>
+    <text x="97" y="18" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="11" font-weight="600" fill="#ffffff">5.7</text>
+  </g>
+  <!-- Vite 8 -->
+  <g transform="translate(310,0)">
+    <rect width="70" height="28" rx="8" ry="8" fill="#F3F1EC"/>
+    <text x="10" y="18" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="12" fill="#71717a">Vite</text>
+    <rect x="42" y="4" width="22" height="20" rx="5" ry="5" fill="#1a1a1a"/>
+    <text x="53" y="18" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="11" font-weight="600" fill="#ffffff">8</text>
+  </g>
+</svg>
