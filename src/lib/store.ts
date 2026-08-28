@@ -88,7 +88,13 @@ interface AppState {
   togglePlan: (id: string) => void;
   deletePlan: (id: string) => void;
 
-  addDoc: (input: { title: string; kind: DocItem["kind"]; mime: string; dataUrl: string }) => void;
+  addDoc: (input: {
+    title: string;
+    notes?: string;
+    kind: DocItem["kind"];
+    mime: string;
+    dataUrl: string;
+  }) => string;
   updateDoc: (id: string, patch: Partial<DocItem>) => void;
   deleteDoc: (id: string) => void;
 
@@ -241,7 +247,6 @@ export const useAppStore = create<AppState>()(
           tasks: s.tasks.map((t) => {
             if (t.id !== id) return t;
             const repeat = normalizeRepeat(t.repeat);
-            // Completing a recurring task → next occurrence stays open
             if (!t.done && repeat !== "none") {
               return {
                 ...t,
@@ -337,12 +342,14 @@ export const useAppStore = create<AppState>()(
 
       deletePlan: (id) => set((s) => ({ plans: s.plans.filter((p) => p.id !== id) })),
 
-      addDoc: (input) =>
+      addDoc: (input) => {
+        const id = uid();
         set((s) => ({
           docs: [
             {
-              id: uid(),
+              id,
               title: input.title.trim() || "Без названия",
+              notes: input.notes?.trim() ?? "",
               kind: input.kind,
               mime: input.mime,
               dataUrl: input.dataUrl,
@@ -350,7 +357,9 @@ export const useAppStore = create<AppState>()(
             },
             ...s.docs,
           ],
-        })),
+        }));
+        return id;
+      },
 
       updateDoc: (id, patch) =>
         set((s) => ({
