@@ -1,9 +1,11 @@
 /**
  * Polls /api/state so both partners see the same data.
  * Auth: same-origin cookies + optional live-preview bearer.
+ * Guest mode: no network sync (local demo only).
  */
 import { useEffect, useRef, useState } from "react";
 import { getBearerToken } from "@/lib/auth/client";
+import { isGuestMode } from "@/lib/guest";
 import { useAppStore } from "@/lib/store";
 
 const POLL_MS = 8000;
@@ -115,6 +117,8 @@ export function useServerSync(): void {
 
   useEffect(() => {
     if (!hydrated || !setupComplete) return;
+    if (isGuestMode()) return;
+
     let cancelled = false;
 
     function applyRemote(data: SyncedSlice, updatedAt: number | null) {
@@ -125,6 +129,7 @@ export function useServerSync(): void {
     }
 
     async function push(seed: boolean): Promise<void> {
+      if (isGuestMode()) return;
       const updatedAt = Date.now();
       const state = pickSyncedSlice(useAppStore.getState());
       try {
@@ -152,6 +157,7 @@ export function useServerSync(): void {
     }
 
     async function pull(): Promise<void> {
+      if (isGuestMode()) return;
       if (pullInFlight.current) return;
       pullInFlight.current = true;
       try {
@@ -183,6 +189,7 @@ export function useServerSync(): void {
 
     const unsubscribe = useAppStore.subscribe((state, prevState) => {
       if (applyingRemote.current) return;
+      if (isGuestMode()) return;
       const changed = SYNCED_KEYS.some((key) => state[key] !== prevState[key]);
       if (!changed) return;
       if (pushTimer.current) clearTimeout(pushTimer.current);
