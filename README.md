@@ -1,10 +1,33 @@
 # Двое
 
-PWA-приложение для пары: общие задачи, календарь, хотелки, скидочные карты, траты и «мы»-раздел со статистикой.
+> Минималистичное PWA-приложение для пары: общие задачи, календарь, вишлисты, скидочные карты, учёт трат 50/50 и личная статистика.
 
-Данные синхронизируются через сервер и Postgres — не нужно быть онлайн одновременно.
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![React](https://img.shields.io/badge/React-19-61dafb.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)
+![Vite](https://img.shields.io/badge/Vite-8-646cff.svg)
+
+Альтернатива громоздким сервисам учёта: простые 50/50 траты, совместные списки и визуальные карточки для пары — без подписок, рекламы и лишних аккаунтов.
+
+Данные моментально синхронизируются через сервер и Postgres — не нужно находиться в приложении одновременно.
 
 **Лицензия:** [MIT](./LICENSE)
+
+---
+
+## Интерфейс
+
+<p align="center">
+  <img src="./screenshots/qa-tasks.png" width="30%" alt="Дела" />
+  <img src="./screenshots/qa-wishes.png" width="30%" alt="Хотелки" />
+  <img src="./screenshots/qa-us.png" width="30%" alt="Мы" />
+</p>
+
+<p align="center">
+  <img src="./screenshots/qa-calendar.png" width="30%" alt="Календарь" />
+  <img src="./screenshots/qa-docs.png" width="30%" alt="Документы" />
+  <img src="./screenshots/qa-vote.png" width="30%" alt="Голосования" />
+</p>
 
 ---
 
@@ -12,53 +35,52 @@ PWA-приложение для пары: общие задачи, календ�
 
 | Раздел | Что внутри |
 |--------|------------|
-| **Дела** | Два вида вкладки. Задачи с фильтрами (все / общие / по партнёру / готово), повторяющиеся задачи, календарь с событиями и сроками |
-| **Хотелки** | Вишлист обоих партнеров. Желания с ссылкой, ценой и картинкой; метаданные URL подтягиваются автоматически |
-| **Траты** | Инструмент для отслеживания общих расходов. Покупки с делением 50/50, категории, погашение долга, баланс «кто кому должен» |
-| **Карты** | Электронные скидочные карты: номер, штрихкод/QR (рисуется на устройстве), логотип, сканер кода, опционально фото пластика. Доступны у обоих партнеров. Документы (в т.ч. PDF) — во второй вкладке |
-| **Мы** | Планы и поездки, капсулы времени, голосования, статистика (дни пары, траты по месяцам и категориям) |
+| **Дела** | Задачи с фильтрами (все / общие / по партнёру / готово), повторяющиеся задачи, календарь с событиями и сроками |
+| **Хотелки** | Общий вишлист с ссылками, ценами и авто-подтягиванием метаданных URL |
+| **Траты** | Трекер трат 50/50, категории, погашение долгов и наглядный баланс «кто кому должен» |
+| **Карты** | Скидочные карты (генерация штрихкодов/QR на устройстве, сканер) и хранилище документов (PDF) |
+| **Мы** | Планы, капсулы времени, голосования и «мы»-статистика (дни вместе, расходы по категориям) |
 
-Нижняя навигация закреплена; приложение ставится на домашний экран iPhone как PWA.
-
-Синхронизация: опрос `/api/state` ~каждые 8 секунд и при возврате во вкладку. Конфликт записи → 409, подтягивается актуальная версия.
+- **iOS Native Look:** закреплённая нижняя навигация, адаптив под mobile Safari, поддержка PWA (установка на домашний экран).
+- **Синхронизация:** опрос `/api/state` ~каждые 8 секунд + при возврате во вкладку; конфликт записи → 409, подтягивается актуальная версия.
+- **Режим без авторизации:** при `VITE_AUTH_ENABLED=false` приложение работает с dev-пользователем (удобно для локальной разработки без БД).
 
 ---
 
 ## Стек
 
-- **TanStack Start** (React 19, Router, SSR)
-- **Vite** + **Nitro** (Vercel)
-- **Tailwind CSS v4** + Radix UI
-- **Zustand** — клиентское состояние (+ persist)
-- **Postgres** (например Neon) — общее хранилище
-- **Better Auth** — вход по email/password, allowlist из двух адресов
-- **Kysely** + SQL-миграции при сборке
-- **jsbarcode** / **qrcode** / **@zxing/browser** — штрихкоды и сканер только на клиенте
+- **Framework:** TanStack Start (React 19, Router, SSR)
+- **Build & Host:** Vite + Nitro (Vercel)
+- **Styling:** Tailwind CSS v4 + Radix UI
+- **State:** Zustand (+ persist)
+- **Database:** Postgres (Neon / PGLite) + Kysely (миграции при сборке)
+- **Auth:** Better Auth (email/password + allowlist на 2 адреса)
+- **Client Utils:** `jsbarcode`, `qrcode`, `@zxing/browser` — генерация и считывание штрихкодов локально на устройстве
 
 ---
 
 ## Переменные окружения
 
-Секреты и личные данные **не коммитятся**. Задаются в Vercel (Settings → Environment Variables) и/или в локальном `.env`.
+Секреты и личные данные **не коммитятся**. Задаются в Vercel (Settings → Environment Variables) или в локальном `.env`.
 
 | Переменная | Обязательно | Описание |
 |------------|-------------|----------|
-| `DATABASE_URL` | для продакшена | Postgres connection string |
-| `BETTER_AUTH_SECRET` | для продакшена | Секрет сессий (длинная случайная строка) |
-| `BETTER_AUTH_URL` | рекомендуется | Публичный URL приложения, например `https://your-app.vercel.app` |
-| `PARTNER_EMAIL_A` | да (auth) | Email партнёра A |
-| `PARTNER_EMAIL_B` | да (auth) | Email партнёра B |
-| `PARTNER_NAME_A` | нет | Отображаемое имя A (по умолчанию в коде) |
-| `PARTNER_NAME_B` | нет | Отображаемое имя B (по умолчанию в коде) |
-| `VITE_AUTH_ENABLED` | нет | `false` — auth выключен (только dev без БД) |
+| `DATABASE_URL` | Prod | Connection string к Postgres |
+| `BETTER_AUTH_SECRET` | Prod | Длинная случайная строка для сессий |
+| `BETTER_AUTH_URL` | Рекомендуется | Публичный URL приложения (`https://your-app.vercel.app`) |
+| `PARTNER_EMAIL_A` | Да (Auth) | Email первого партнёра |
+| `PARTNER_EMAIL_B` | Да (Auth) | Email второго партнёра |
+| `PARTNER_NAME_A` | Нет | Отображаемое имя A |
+| `PARTNER_NAME_B` | Нет | Отображаемое имя B |
+| `VITE_AUTH_ENABLED` | Нет | `false` — auth выключен (dev-режим без БД) |
 
-Без `PARTNER_EMAIL_A` / `PARTNER_EMAIL_B` регистрация и вход закрыты (fail closed).
+Без `PARTNER_EMAIL_A` / `PARTNER_EMAIL_B` регистрация и вход закрыты (fail-closed).
 
 Пример локального `.env` (файл в `.gitignore`):
 
 ```bash
 DATABASE_URL=postgresql://user:pass@host:5432/db
-BETTER_AUTH_SECRET=замените_на_длинную_случайную_строку
+BETTER_AUTH_SECRET=your_super_secret_string
 BETTER_AUTH_URL=http://localhost:8080
 PARTNER_EMAIL_A=you@example.com
 PARTNER_EMAIL_B=partner@example.com
@@ -75,13 +97,13 @@ npm run dev
 
 Приложение: [http://localhost:8080](http://localhost:8080)
 
-Без `DATABASE_URL` используется встроенный PGLite (данные не переживают рестарт процесса). Для постоянной синхронизации задайте Postgres в `.env`.
+Без `DATABASE_URL` используется встроенный PGLite (данные сбрасываются при перезапуске). Для постоянного хранения укажите Postgres в `.env`.
 
 | Команда | Описание |
 |---------|----------|
 | `npm run dev` | Dev-сервер |
-| `npm run build` | Сборка + миграции |
-| `npm run typecheck` | TypeScript |
+| `npm run build` | Сборка + применение миграций |
+| `npm run typecheck` | Проверка типов TypeScript |
 | `npm run lint` | ESLint |
 | `npm test` | Тесты |
 | `npm run preview` | Превью production-сборки |
@@ -90,16 +112,17 @@ npm run dev
 
 ## Деплой на Vercel
 
-Кратко:
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/lisbismuth/two)
 
-1. Подключите репозиторий к Vercel.
-2. Добавьте **Postgres** (например Neon) — нужна `DATABASE_URL`.
-3. Задайте `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `PARTNER_EMAIL_A`, `PARTNER_EMAIL_B`.
-4. Deploy. Миграции применяются при `npm run build`.
+1. Запушьте репозиторий на GitHub (или нажмите кнопку выше).
+2. Импортируйте проект в Vercel.
+3. Подключите Postgres (например Neon) — нужна `DATABASE_URL`.
+4. Задайте `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `PARTNER_EMAIL_A`, `PARTNER_EMAIL_B`.
+5. Deploy. Миграции БД применяются автоматически при сборке.
 
 Не коммитьте `.vercel/output` — иначе платформа может отдать старый бандл.
 
-Подробности при необходимости — в [DEPLOY.md](./DEPLOY.md).
+Подробности — в [DEPLOY.md](./DEPLOY.md).
 
 ---
 
@@ -119,23 +142,23 @@ src/
   components/       # UI, сканер штрихкода, оболочка
   lib/
     store.ts        # Zustand
-    sync/           # /api/state — общий стейт (только для авторизованных партнёров)
+    sync/           # /api/state — общий стейт
     auth/           # Better Auth (server + client)
     partners-auth.ts
     types.ts
 migrations/         # SQL
 public/             # иконки PWA и статика
+screenshots/        # скриншоты для README
 ```
 
 ---
 
-## Безопасность (кратко)
+## Безопасность
 
-- Вход только для двух email из env; чужие аккаунты отклоняются.
-- `/api/state` требует сессию allowlist-пользователя.
-- Штрихкоды и сканер карт считаются **на устройстве** (ZXing / JsBarcode / QRCode), без отправки номера в сторонние сервисы.
-- Общий стейт в БД — одна JSON-запись на приложение: модель «для двоих», не multi-tenant SaaS.
-- Голосования скрывают чужой выбор в UI до завершения; на сервере данные хранятся в общем документе (доверие между партнёрами, не криптографическая тайна).
+- **Fail-Closed Auth:** регистрация и доступ разрешены только для двух указанных в `.env` адресов.
+- **Client-Side Heavy:** штрихкоды и сканер обрабатываются только на устройстве (ZXing / JsBarcode / QRCode), без отправки на сторонние API.
+- **Private Data:** проект рассчитан на приватное использование одной парой (одна JSON-запись в БД, не multi-tenant SaaS).
+- Голосования скрывают чужой выбор в UI до завершения; на сервере данные хранятся в общем документе (доверие между партнёрами).
 
 ---
 
