@@ -1,25 +1,18 @@
 /**
- * Server-backed shared state for the couple's app data — the actual source
- * of truth now, replacing the earlier P2P-only approach (kept as a single
- * row via migrations/0001_app_state.sql; see that file for why one row).
- * One document, read/written whole. Client side: ./client.ts.
- *
- * Optimistic concurrency: PUT accepts `expectedUpdatedAt`, the client's
- * last-known server timestamp. If the stored row has moved on since then —
- * the partner wrote first — the write is rejected (409) with the current
- * row attached, so the caller reconciles instead of silently overwriting a
- * change it never saw. Implemented as one atomic statement (INSERT ...
- * ON CONFLICT ... DO UPDATE ... WHERE) rather than a transaction, because
- * the shared `Sql` surface in @/lib/db doesn't expose a single reserved
- * connection to run BEGIN/COMMIT across statements — see that file.
+ * Server-backed shared state for the couple's app data.
+ * GET/PUT require a signed-in allowlisted partner — never public.
  */
 import { z } from "zod";
+import { auth, authConfigured } from "../auth/server";
+import { isAllowedEmail } from "../partners-auth";
 import { getSql } from "../db.ts";
+
+/** Reject oversized JSON (photos/logos as data URLs can be large but bounded). */
+const MAX_BODY_BYTES = 4_500_000;
 
 const putSchema = z.object({
   data: z.record(z.string(), z.unknown()),
   updatedAt: z.number().int().nonnegative(),
-  // Omitted or null: force-write, no conflict check (first-ever seed).
   expectedUpdatedAt: z.number().int().nonnegative().nullable().optional(),
 });
 
@@ -31,8 +24,30 @@ interface StateRow {
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json", "cache-control": "no-store" },
+    headers: {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff",
+    },
   });
+}
+
+/**
+ * Only the two partner emails may read/write shared state.
+ * Uses session cookie or Authorization: Bearer (live preview).
+ */
+async function requirePartnerSession(request: Request): Promise<Response | null> {
+  // When auth is intentionally off and there is no real DB, allow local/dev
+  // (same contract as requireUserId). Production always has DATABASE_URL + auth.
+  const databaseConfigured = Boolean(process.env.DATABASE_URL?.trim());
+  if (!authConfigured && !databaseConfigured) return null;
+
+  const session = await auth.api.getSession({ headers: request.headers });
+  const email = session?.user?.email;
+  if (!session?.user || !email || !isAllowedEmail(email)) {
+    return json({ error: "unauthorized" }, 401);
+  }
+  return null;
 }
 
 async function handleGet(): Promise<Response> {
@@ -43,9 +58,24 @@ async function handleGet(): Promise<Response> {
 }
 
 async function handlePut(request: Request): Promise<Response> {
+  const contentLength = request.headers.get("content-length");
+  if (contentLength && Number(contentLength) > MAX_BODY_BYTES) {
+    return json({ error: "payload too large" }, 413);
+  }
+
+  let raw: string;
+  try {
+    raw = await request.text();
+  } catch {
+    return json({ error: "invalid body" }, 400);
+  }
+  if (raw.length > MAX_BODY_BYTES) {
+    return json({ error: "payload too large" }, 413);
+  }
+
   let body: unknown;
   try {
-    body = await request.json();
+    body = JSON.parse(raw);
   } catch {
     return json({ error: "invalid JSON" }, 400);
   }
@@ -66,8 +96,6 @@ async function handlePut(request: Request): Promise<Response> {
   );
 
   if (rows.length === 0) {
-    // A row exists but didn't match expectedUpdatedAt — the partner wrote
-    // first. Hand back the current row instead of failing blind.
     const current = await sql.query<StateRow>(
       "SELECT data, updated_at FROM app_state WHERE id = 1",
     );
@@ -87,6 +115,9 @@ async function handlePut(request: Request): Promise<Response> {
 /** Request entrypoint for the /api/state route (GET read, PUT write). */
 export async function handleState(request: Request): Promise<Response> {
   try {
+    const denied = await requirePartnerSession(request);
+    if (denied) return denied;
+
     if (request.method === "GET") return await handleGet();
     if (request.method === "PUT") return await handlePut(request);
     return json({ error: "method not allowed" }, 405);
