@@ -21,6 +21,13 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/docs")({ component: DocsPage });
 
+function isPdfFile(file: File): boolean {
+  return (
+    file.type === "application/pdf" ||
+    file.name.toLowerCase().endsWith(".pdf")
+  );
+}
+
 function DocsPage() {
   const [tab, setTab] = useState<"doc" | "card">("card");
   const [viewer, setViewer] = useState<DocItem | null>(null);
@@ -40,6 +47,13 @@ function DocsPage() {
   async function onFiles(list: FileList | null) {
     if (!list?.length) return;
     const file = list[0]!;
+    // Cards: images only. Documents may include PDF.
+    if (tab === "card" && isPdfFile(file)) {
+      toast("Для карт только фото, не PDF");
+      if (cameraRef.current) cameraRef.current.value = "";
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
     try {
       const { dataUrl, mime } = await fileToDataUrl(file);
       const fallback = tab === "card" ? "Карта" : "Документ";
@@ -96,7 +110,7 @@ function DocsPage() {
           text={
             tab === "card"
               ? "Отсканируйте штрихкод с пластика или введите номер. Лого и код — на кассе без интернета."
-              : "Всё, что добавите, хранится у вас и открывается офлайн."
+              : "Всё, что добавите, хранится у вас и открывается офлайн. PDF тоже можно."
           }
           action={
             tab === "card" ? (
