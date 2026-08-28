@@ -96,6 +96,7 @@ interface AppState {
     kind: DocItem["kind"];
     mime?: string;
     dataUrl?: string;
+    logoUrl?: string;
     codeValue?: string;
     codeFormat?: CardCodeFormat | "";
   }) => string;
@@ -359,6 +360,7 @@ export const useAppStore = create<AppState>()(
               kind: input.kind,
               mime: input.mime ?? "",
               dataUrl: input.dataUrl ?? "",
+              logoUrl: input.logoUrl ?? "",
               codeValue,
               codeFormat,
               createdAt: new Date().toISOString(),
