@@ -2,6 +2,14 @@
 
 > Минималистичное PWA-приложение для пары: общие задачи, календарь, вишлисты, скидочные карты, учёт трат 50/50 и личная статистика.
 
+<p align="center">
+  <a href="https://two-lissy1.vercel.app/?demo=true" target="_blank" rel="noopener noreferrer">
+    <img src="https://img.shields.io/badge/%E2%9C%A8_Try_Demo-Live_Preview-6366f1?style=for-the-badge" alt="Try Live Demo">
+  </a>
+</p>
+
+> 💡 **Демо-режим (Guest Mode):** нажмите кнопку выше или откройте приложение с параметром `?demo=true` (или `?guest=true`), чтобы покрутить интерфейс с заготовленными данными пары Ани и Игоря — задачи, траты, хотелки, голосование. Только просмотр, без записи на сервер.
+
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![React](https://img.shields.io/badge/React-19-61dafb.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)
@@ -43,6 +51,7 @@
 
 - **iOS Native Look:** закреплённая нижняя навигация, адаптив под mobile Safari, поддержка PWA (установка на домашний экран).
 - **Синхронизация:** опрос `/api/state` ~каждые 8 секунд + при возврате во вкладку; конфликт записи → 409, подтягивается актуальная версия.
+- **Демо по ссылке:** `/?demo=true` или `/?guest=true` — гостевой режим с демо-данными (работает и при выключенном auth).
 - **Режим без авторизации:** при `VITE_AUTH_ENABLED=false` приложение работает с dev-пользователем (удобно для локальной разработки без БД).
 
 ---
@@ -95,7 +104,8 @@ npm install
 npm run dev
 ```
 
-Приложение: [http://localhost:8080](http://localhost:8080)
+Приложение: [http://localhost:8080](http://localhost:8080)  
+Демо сразу: [http://localhost:8080/?demo=true](http://localhost:8080/?demo=true)
 
 Без `DATABASE_URL` используется встроенный PGLite (данные сбрасываются при перезапуске). Для постоянного хранения укажите Postgres в `.env`.
 
@@ -144,6 +154,7 @@ src/
     store.ts        # Zustand
     sync/           # /api/state — общий стейт
     auth/           # Better Auth (server + client)
+    guest.ts        # демо-режим (?demo=true)
     partners-auth.ts
     types.ts
 migrations/         # SQL
@@ -159,6 +170,7 @@ screenshots/        # скриншоты для README
 - **Client-Side Heavy:** штрихкоды и сканер обрабатываются только на устройстве (ZXing / JsBarcode / QRCode), без отправки на сторонние API.
 - **Private Data:** проект рассчитан на приватное использование одной парой (одна JSON-запись в БД, не multi-tenant SaaS).
 - Голосования скрывают чужой выбор в UI до завершения; на сервере данные хранятся в общем документе (доверие между партнёрами).
+- **Guest / demo:** локальный snapshot, без записи в `/api/state`.
 
 ---
 

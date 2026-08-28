@@ -40,6 +40,38 @@ export function exitGuestMode(): void {
   }
 }
 
+/**
+ * Deep-link into demo/guest mode via `?demo=true` or `?guest=true`.
+ * Sets the guest flag, strips the query params (clean `/`), returns true when
+ * the current load should show the demo snapshot. Works with auth on or off.
+ *
+ * Safe to call during render on the client — sessionStorage + replaceState only.
+ * Callers should apply `buildGuestSnapshot()` after Zustand has hydrated.
+ */
+export function tryEnterGuestFromUrl(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const want =
+      params.get("demo") === "true" ||
+      params.get("guest") === "true" ||
+      params.get("demo") === "1" ||
+      params.get("guest") === "1";
+    if (!want) return false;
+
+    enterGuestMode();
+
+    params.delete("demo");
+    params.delete("guest");
+    const qs = params.toString();
+    const next = `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`;
+    window.history.replaceState(window.history.state, "", next || "/");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Demo partners — fictional, no real emails or birthdays. */
 export const GUEST_PARTNERS: Record<PartnerId, Partner> = {
   a: {

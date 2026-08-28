@@ -12,7 +12,12 @@ import { RedirectToSignIn, UserButton } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { SIGN_IN_PATH } from "@/lib/auth/gates";
 import { partnerIdFromEmail } from "@/lib/partners-auth";
-import { exitGuestMode, isGuestMode } from "@/lib/guest";
+import {
+  buildGuestSnapshot,
+  exitGuestMode,
+  isGuestMode,
+  tryEnterGuestFromUrl,
+} from "@/lib/guest";
 import { Button } from "@/components/ui";
 
 const TABS = [
@@ -25,6 +30,12 @@ const TABS = [
 
 const TAB_BAR_PAD = "pb-[calc(4.25rem+env(safe-area-inset-bottom))]";
 
+/** Set once per page load when `?demo=true` / `?guest=true` was present. */
+let urlDemoRequested = false;
+if (typeof window !== "undefined") {
+  urlDemoRequested = tryEnterGuestFromUrl();
+}
+
 export function HydrationGate({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
 
@@ -33,6 +44,14 @@ export function HydrationGate({ children }: { children: ReactNode }) {
     if (useAppStore.persist.hasHydrated()) setReady(true);
     return unsub;
   }, []);
+
+  // After persist hydrates, load the demo snapshot when guest mode is on
+  // (deep-link or "Войти как гость"). Runs once per mount after ready.
+  useEffect(() => {
+    if (!ready) return;
+    if (!isGuestMode()) return;
+    useAppStore.setState(buildGuestSnapshot());
+  }, [ready]);
 
   if (!ready) return <Splash />;
   return children;
@@ -76,7 +95,7 @@ function GuestBanner() {
           className="shrink-0 !h-8 !px-2 text-[13px]"
           onClick={() => {
             exitGuestMode();
-            window.location.href = SIGN_IN_PATH;
+            window.location.href = authEnabled ? SIGN_IN_PATH : "/";
           }}
         >
           Войти
@@ -91,7 +110,10 @@ export function AppShell() {
   const isLogin = pathname === SIGN_IN_PATH || pathname.startsWith("/login");
   const { user, isPending } = useCurrentUserState();
   const setupComplete = useAppStore((s) => s.setupComplete);
-  const guest = typeof window !== "undefined" && isGuestMode();
+  // urlDemoRequested forces guest on the first paint (before React state),
+  // so auth gates do not redirect away from `?demo=true`.
+  const guest =
+    (typeof window !== "undefined" && isGuestMode()) || urlDemoRequested;
 
   useServerSync();
 
