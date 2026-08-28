@@ -74,6 +74,8 @@ export interface DocItem {
   mime: string;
   /** Photo/PDF optional when card is electronic (codeValue set). */
   dataUrl: string;
+  /** Small brand logo (data URL), shown on the card face. */
+  logoUrl: string;
   /** Raw loyalty number — rendered as barcode/QR only on this device. */
   codeValue: string;
   codeFormat: CardCodeFormat | "";
