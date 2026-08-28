@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://two-lissy1.vercel.app/?demo=true" target="_blank" rel="noopener noreferrer">
-    <img src="https://img.shields.io/badge/%E2%9C%A8_Try_Demo-Live_Preview-222222?style=for-the-badge&labelColor=111111" alt="Try Live Demo">
+    <img src="https://img.shields.io/badge/✨_Try_Demo-Live_Preview-111111?style=for-the-badge&logo=vercel&logoColor=white" alt="Try Live Demo">
   </a>
 </p>
 
