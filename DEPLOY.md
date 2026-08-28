@@ -38,9 +38,6 @@
    **Neon** → Continue → создать новую базу. Neon сам пропишет переменную
    `DATABASE_URL` в Production и Development — руками копировать не нужно.
 
-   (Если всё же успела задеплоить раньше — не страшно, просто подключи
-   Neon тем же способом через Storage → Marketplace уже после, а потом
-   сделай Redeploy из вкладки Deployments.)
 
 3. **Deploy.** Таблица создастся сама: в `package.json` команда сборки уже
    включает `db:migrate`, она применяет `migrations/0001_app_state.sql`
