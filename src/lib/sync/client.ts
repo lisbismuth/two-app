@@ -71,16 +71,16 @@ function normalizeRemote(data: SyncedSlice): SyncedSlice {
     if (!Array.isArray(next[key])) next[key] = [];
   }
   if (Array.isArray(next.docs)) {
-    next.docs = next.docs.map(normalizeDoc) as typeof next.docs;
+    next.docs = next.docs.map(normalizeDoc) as unknown as typeof next.docs;
   }
   if (Array.isArray(next.tasks)) {
     next.tasks = next.tasks.map((t) => {
-      const row = t as Record<string, unknown>;
+      const row = t as unknown as Record<string, unknown>;
       return {
         ...row,
         repeat: typeof row.repeat === "string" ? row.repeat : "none",
       };
-    }) as typeof next.tasks;
+    }) as unknown as typeof next.tasks;
   }
   return next;
 }
