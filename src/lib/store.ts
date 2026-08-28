@@ -1,9 +1,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { normalizeCodeFormat, sanitizeCodeValue } from "./card-code";
 import { advanceDueDate, normalizeRepeat } from "./task-repeat";
 import type {
   CalEvent,
   Capsule,
+  CardCodeFormat,
   DocItem,
   ExpenseCategory,
   ExpenseItem,
@@ -92,8 +94,10 @@ interface AppState {
     title: string;
     notes?: string;
     kind: DocItem["kind"];
-    mime: string;
-    dataUrl: string;
+    mime?: string;
+    dataUrl?: string;
+    codeValue?: string;
+    codeFormat?: CardCodeFormat | "";
   }) => string;
   updateDoc: (id: string, patch: Partial<DocItem>) => void;
   deleteDoc: (id: string) => void;
@@ -344,6 +348,8 @@ export const useAppStore = create<AppState>()(
 
       addDoc: (input) => {
         const id = uid();
+        const codeValue = sanitizeCodeValue(input.codeValue ?? "");
+        const codeFormat = codeValue ? normalizeCodeFormat(input.codeFormat) : "";
         set((s) => ({
           docs: [
             {
@@ -351,8 +357,10 @@ export const useAppStore = create<AppState>()(
               title: input.title.trim() || "Без названия",
               notes: input.notes?.trim() ?? "",
               kind: input.kind,
-              mime: input.mime,
-              dataUrl: input.dataUrl,
+              mime: input.mime ?? "",
+              dataUrl: input.dataUrl ?? "",
+              codeValue,
+              codeFormat,
               createdAt: new Date().toISOString(),
             },
             ...s.docs,
@@ -363,7 +371,19 @@ export const useAppStore = create<AppState>()(
 
       updateDoc: (id, patch) =>
         set((s) => ({
-          docs: s.docs.map((d) => (d.id === id ? { ...d, ...patch } : d)),
+          docs: s.docs.map((d) => {
+            if (d.id !== id) return d;
+            const next = { ...d, ...patch };
+            if (patch.codeValue !== undefined) {
+              next.codeValue = sanitizeCodeValue(patch.codeValue);
+            }
+            if (patch.codeFormat !== undefined || patch.codeValue !== undefined) {
+              next.codeFormat = next.codeValue
+                ? normalizeCodeFormat(patch.codeFormat ?? next.codeFormat)
+                : "";
+            }
+            return next;
+          }),
         })),
 
       deleteDoc: (id) => set((s) => ({ docs: s.docs.filter((d) => d.id !== id) })),
