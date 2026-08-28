@@ -5,6 +5,9 @@ export type TaskAssignee = PartnerId | "none";
 /** How often a task repeats after completion. */
 export type TaskRepeat = "none" | "daily" | "weekly" | "monthly";
 
+/** Barcode / QR formats drawn only on-device (never sent to third parties). */
+export type CardCodeFormat = "CODE128" | "EAN13" | "EAN8" | "CODE39" | "QR";
+
 export type ExpenseCategory =
   | "groceries"
   | "cafes"
@@ -65,11 +68,15 @@ export interface PlanItem {
 export interface DocItem {
   id: string;
   title: string;
-  /** Optional note: card number, store, expiry… */
+  /** Optional note: store, expiry… — not the scannable code */
   notes: string;
   kind: "doc" | "card";
   mime: string;
+  /** Photo/PDF optional when card is electronic (codeValue set). */
   dataUrl: string;
+  /** Raw loyalty number — rendered as barcode/QR only on this device. */
+  codeValue: string;
+  codeFormat: CardCodeFormat | "";
   createdAt: string;
 }
 
