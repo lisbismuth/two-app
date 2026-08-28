@@ -65,6 +65,8 @@ export interface PlanItem {
 export interface DocItem {
   id: string;
   title: string;
+  /** Optional note: card number, store, expiry… */
+  notes: string;
   kind: "doc" | "card";
   mime: string;
   dataUrl: string;
