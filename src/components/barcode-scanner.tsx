@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button, Sheet } from "@/components/ui";
-import { decodeBarcodeFromFile, type ScanResult } from "@/lib/scan-barcode";
+import {
+  decodeBarcodeFromFile,
+  mapZxingFormat,
+  type ScanResult,
+} from "@/lib/scan-barcode";
 
 /**
  * Live camera scan (ZXing) + fallback: photo of the code.
@@ -22,6 +26,8 @@ export function BarcodeScannerSheet({
   const [busy, setBusy] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const handled = useRef(false);
+  const onDetectedRef = useRef(onDetected);
+  onDetectedRef.current = onDetected;
 
   useEffect(() => {
     if (!open) {
@@ -45,26 +51,18 @@ export function BarcodeScannerSheet({
           videoRef.current,
           (result, _err, ctrl) => {
             if (!result || handled.current) return;
-            handled.current = true;
             const value = result.getText();
             if (!value) return;
+            handled.current = true;
             const formatName =
               typeof result.getBarcodeFormat === "function"
                 ? String(result.getBarcodeFormat())
                 : "CODE_128";
             ctrl.stop();
             controlsRef.current = null;
-            const { mapZxingFormat } = require("@/lib/scan-barcode") as typeof import("@/lib/scan-barcode");
-            // use static import path — require may break ESM; inline map instead
-            void mapZxingFormat;
-            onDetected({
+            onDetectedRef.current({
               value,
-              format: ({
-                EAN_13: "EAN13",
-                EAN_8: "EAN8",
-                CODE_39: "CODE39",
-                QR_CODE: "QR",
-              } as Record<string, ScanResult["format"]>)[formatName] ?? "CODE128",
+              format: mapZxingFormat(formatName),
             });
             onOpenChange(false);
             toast("Код считан");
@@ -87,7 +85,7 @@ export function BarcodeScannerSheet({
       controlsRef.current?.stop();
       controlsRef.current = null;
     };
-  }, [open, onDetected, onOpenChange]);
+  }, [open, onOpenChange]);
 
   async function onPhoto(list: FileList | null) {
     const file = list?.[0];
@@ -109,7 +107,7 @@ export function BarcodeScannerSheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChange} title="Сканер кода">
       <div className="flex flex-col gap-4">
-        <div className="overflow-hidden rounded-card bg-ink aspect-[3/4]">
+        <div className="aspect-[3/4] overflow-hidden rounded-card bg-ink">
           <video
             ref={videoRef}
             className="size-full object-cover"
@@ -132,11 +130,7 @@ export function BarcodeScannerSheet({
           className="hidden"
           onChange={(e) => void onPhoto(e.target.files)}
         />
-        <Button
-          variant="secondary"
-          disabled={busy}
-          onClick={() => fileRef.current?.click()}
-        >
+        <Button variant="secondary" disabled={busy} onClick={() => fileRef.current?.click()}>
           {busy ? "Распознаём…" : "Сфотографировать код"}
         </Button>
         <Button variant="ghost" onClick={() => onOpenChange(false)}>
