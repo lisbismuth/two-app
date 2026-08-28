@@ -101,8 +101,8 @@ npm install
 npm run dev
 ```
 
-Приложение: [http://localhost:8080](http://localhost:8080)  
-Демо сразу: [http://localhost:8080/?demo=true](http://localhost:8080/?demo=true)
+Приложение: `http://localhost:5173` (после запуска `npm run dev`)
+Демо сразу: `http://localhost:5173/?demo=true`
 
 Без `DATABASE_URL` используется встроенный PGLite (данные сбрасываются при перезапуске). Для постоянного хранения укажите Postgres в `.env`.
 
