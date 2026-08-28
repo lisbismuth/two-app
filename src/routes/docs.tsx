@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { CreditCard, FileText, Pencil, X } from "lucide-react";
+import { CreditCard, FileText, Pencil, ScanLine, X } from "lucide-react";
 import { toast } from "sonner";
+import { BarcodeScannerSheet } from "@/components/barcode-scanner";
 import { CardBarcode } from "@/components/card-barcode";
 import { Button, EmptyState, Field, Input, Segmented, Sheet, Textarea } from "@/components/ui";
 import { Page, PageHeader } from "@/components/shell";
@@ -13,6 +14,7 @@ import {
   sanitizeCodeValue,
 } from "@/lib/card-code";
 import { fileToDataUrl } from "@/lib/images";
+import type { ScanResult } from "@/lib/scan-barcode";
 import { useAppStore } from "@/lib/store";
 import type { CardCodeFormat, DocItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -61,10 +63,7 @@ function DocsPage() {
 
   return (
     <Page>
-      <PageHeader
-        title={tab === "card" ? "Карты" : "Документы"}
-        onAdd={onAddClick}
-      />
+      <PageHeader title={tab === "card" ? "Карты" : "Документы"} onAdd={onAddClick} />
       <Segmented
         value={tab}
         onChange={setTab}
@@ -96,18 +95,12 @@ function DocsPage() {
           title={tab === "card" ? "Скидочные карты" : "Билеты и страховки"}
           text={
             tab === "card"
-              ? "Электронная карта с штрихкодом на кассе — или фото пластика. Номер рисуется только на телефоне."
+              ? "Отсканируйте штрихкод с пластика или введите номер. Лого и код — на кассе без интернета."
               : "Всё, что добавите, хранится у вас и открывается офлайн."
           }
           action={
             tab === "card" ? (
-              <Button
-                onClick={() => {
-                  setCreateOpen(true);
-                }}
-              >
-                Электронная карта
-              </Button>
+              <Button onClick={() => setCreateOpen(true)}>Электронная карта</Button>
             ) : (
               <Button onClick={() => cameraRef.current?.click()}>Сфотографировать</Button>
             )
@@ -135,7 +128,13 @@ function DocsPage() {
                   className="flex w-full items-stretch overflow-hidden rounded-card bg-surface text-left shadow-card transition-transform duration-150 active:scale-[0.98]"
                 >
                   <div className="flex w-[7.5rem] shrink-0 items-center justify-center bg-chip sm:w-36">
-                    {d.mime.startsWith("image/") && d.dataUrl ? (
+                    {d.logoUrl ? (
+                      <img
+                        src={d.logoUrl}
+                        alt=""
+                        className="max-h-14 max-w-[5.5rem] object-contain p-2"
+                      />
+                    ) : d.mime.startsWith("image/") && d.dataUrl ? (
                       <img
                         src={d.dataUrl}
                         alt=""
@@ -213,7 +212,7 @@ function DocsPage() {
               setCreateOpen(true);
             }}
           >
-            Электронная — номер и штрихкод
+            Электронная — сканер или номер
           </Button>
           <Button
             variant="secondary"
@@ -222,7 +221,7 @@ function DocsPage() {
               cameraRef.current?.click();
             }}
           >
-            Сфотографировать
+            Сфотографировать пластик
           </Button>
           <Button
             variant="ghost"
@@ -234,8 +233,7 @@ function DocsPage() {
             Выбрать из галереи
           </Button>
           <p className="mt-3 text-[12px] leading-relaxed text-muted">
-            Штрихкод рисуется только на этом телефоне. Номер не отправляется в сторонние сервисы —
-            только вам двоим в приложении.
+            Сканер и штрихкод работают только на телефоне — номер никуда не отправляется.
           </p>
         </div>
       </Sheet>
@@ -252,6 +250,7 @@ function DocsPage() {
             codeFormat: payload.codeFormat,
             mime: payload.mime,
             dataUrl: payload.dataUrl,
+            logoUrl: payload.logoUrl,
           });
           const created = useAppStore.getState().docs.find((d) => d.id === id);
           if (created) setViewer(created);
@@ -299,12 +298,7 @@ function CardViewer({
   const format = normalizeCodeFormat(item.codeFormat);
 
   return (
-    <div
-      className={cn(
-        "fixed inset-0 z-50 flex flex-col",
-        electronic ? "bg-white" : "bg-ink/95",
-      )}
-    >
+    <div className={cn("fixed inset-0 z-50 flex flex-col", electronic ? "bg-white" : "bg-ink/95")}>
       <div
         className={cn(
           "flex items-center gap-2 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2",
@@ -339,13 +333,14 @@ function CardViewer({
       <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4">
         {electronic && format ? (
           <>
+            {item.logoUrl ? (
+              <img src={item.logoUrl} alt="" className="max-h-16 max-w-[40%] object-contain" />
+            ) : null}
             <CardBarcode value={item.codeValue} format={format} />
             <p className="max-w-[90%] break-all text-center font-mono text-[13px] text-ink/70">
               {item.codeValue}
             </p>
-            {item.notes ? (
-              <p className="text-center text-[13px] text-muted">{item.notes}</p>
-            ) : null}
+            {item.notes ? <p className="text-center text-[13px] text-muted">{item.notes}</p> : null}
           </>
         ) : item.mime.startsWith("image/") && item.dataUrl ? (
           <img
@@ -361,21 +356,14 @@ function CardViewer({
       </div>
 
       <div className="flex flex-col gap-2 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-        {electronic && item.dataUrl && item.mime.startsWith("image/") ? (
-          <p className="mb-1 text-center text-[12px] text-muted">Есть фото пластика — в редактировании</p>
-        ) : null}
         <Button
-          variant={electronic ? "secondary" : "secondary"}
+          variant="secondary"
           className={electronic ? undefined : "border-0 bg-white/10 text-on-ink ring-0"}
           onClick={onEdit}
         >
           Изменить
         </Button>
-        <Button
-          variant="ghost"
-          className={electronic ? undefined : "text-white/80"}
-          onClick={onDelete}
-        >
+        <Button variant="ghost" className={electronic ? undefined : "text-white/80"} onClick={onDelete}>
           Удалить
         </Button>
       </div>
@@ -397,6 +385,7 @@ function ElectronicCardSheet({
     codeFormat: CardCodeFormat;
     mime: string;
     dataUrl: string;
+    logoUrl: string;
   }) => void;
 }) {
   const [title, setTitle] = useState("");
@@ -404,7 +393,10 @@ function ElectronicCardSheet({
   const [codeFormat, setCodeFormat] = useState<CardCodeFormat>("CODE128");
   const [notes, setNotes] = useState("");
   const [photo, setPhoto] = useState<{ mime: string; dataUrl: string } | null>(null);
+  const [logoUrl, setLogoUrl] = useState("");
+  const [scanOpen, setScanOpen] = useState(false);
   const photoRef = useRef<HTMLInputElement>(null);
+  const logoRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -413,115 +405,164 @@ function ElectronicCardSheet({
     setCodeFormat("CODE128");
     setNotes("");
     setPhoto(null);
+    setLogoUrl("");
   }, [open]);
 
+  function applyScan(result: ScanResult) {
+    setCodeValue(result.value);
+    setCodeFormat(result.format);
+  }
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange} title="Электронная карта">
-      <form
-        className="flex flex-col gap-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          const code = sanitizeCodeValue(codeValue);
-          if (!title.trim()) {
-            toast("Укажите название");
-            return;
-          }
-          if (!code) {
-            toast("Введите номер с карты");
-            return;
-          }
-          onCreate({
-            title: title.trim(),
-            notes: notes.trim(),
-            codeValue: code,
-            codeFormat,
-            mime: photo?.mime ?? "",
-            dataUrl: photo?.dataUrl ?? "",
-          });
-        }}
-      >
-        <Field label="Название">
-          <Input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Пятёрочка, Лента, Аптека…"
-            autoFocus
-            required
-            autoComplete="off"
-          />
-        </Field>
-        <Field label="Номер карты">
-          <Input
-            value={codeValue}
-            onChange={(e) => setCodeValue(e.target.value)}
-            placeholder="Как на пластике или в приложении"
-            inputMode="text"
-            autoComplete="off"
-            autoCorrect="off"
-            spellCheck={false}
-            required
-          />
-        </Field>
-        <Field label="Формат кода">
-          <div className="flex flex-wrap gap-1.5">
-            {CARD_CODE_FORMATS.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setCodeFormat(f.id)}
-                className={cn(
-                  "h-9 rounded-full px-3 text-[13px] font-semibold",
-                  codeFormat === f.id ? "bg-ink text-on-ink" : "bg-chip text-ink-soft",
-                )}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-          <p className="mt-1.5 text-[12px] text-muted">
-            {CARD_CODE_FORMATS.find((f) => f.id === codeFormat)?.hint}
-          </p>
-        </Field>
-        <Field label="Заметка">
-          <Textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Необязательно"
-            rows={2}
-          />
-        </Field>
-        <div>
-          <input
-            ref={photoRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={async (e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              try {
-                const { dataUrl, mime } = await fileToDataUrl(file);
-                setPhoto({ dataUrl, mime });
-              } catch {
-                toast("Фото не загрузилось");
-              }
-              e.target.value = "";
-            }}
-          />
-          <Button type="button" variant="secondary" onClick={() => photoRef.current?.click()}>
-            {photo ? "Заменить фото (необяз.)" : "Добавить фото (необяз.)"}
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange} title="Электронная карта">
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const code = sanitizeCodeValue(codeValue);
+            if (!title.trim()) {
+              toast("Укажите название");
+              return;
+            }
+            if (!code) {
+              toast("Введите или отсканируйте номер");
+              return;
+            }
+            onCreate({
+              title: title.trim(),
+              notes: notes.trim(),
+              codeValue: code,
+              codeFormat,
+              mime: photo?.mime ?? "",
+              dataUrl: photo?.dataUrl ?? "",
+              logoUrl,
+            });
+          }}
+        >
+          <Field label="Название">
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Пятёрочка, Лента, Аптека…"
+              autoFocus
+              required
+              autoComplete="off"
+            />
+          </Field>
+
+          <Button type="button" variant="secondary" onClick={() => setScanOpen(true)}>
+            <ScanLine className="size-4" />
+            Сканировать код с карты
           </Button>
-          {photo ? (
-            <img src={photo.dataUrl} alt="" className="mt-2 max-h-24 rounded-card object-contain" />
-          ) : null}
-        </div>
-        <p className="text-[12px] leading-relaxed text-muted">
-          Номер хранится только в вашем приложении (и у партнёра после синхронизации). Штрихкод
-          рисуется на экране локально — без отправки на чужие сервера.
-        </p>
-        <Button type="submit">Сохранить карту</Button>
-      </form>
-    </Sheet>
+
+          <Field label="Номер карты">
+            <Input
+              value={codeValue}
+              onChange={(e) => setCodeValue(e.target.value)}
+              placeholder="Или введите вручную"
+              inputMode="text"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              required
+            />
+          </Field>
+          <Field label="Формат кода">
+            <div className="flex flex-wrap gap-1.5">
+              {CARD_CODE_FORMATS.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setCodeFormat(f.id)}
+                  className={cn(
+                    "h-9 rounded-full px-3 text-[13px] font-semibold",
+                    codeFormat === f.id ? "bg-ink text-on-ink" : "bg-chip text-ink-soft",
+                  )}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </Field>
+
+          <Field label="Логотип">
+            <input
+              ref={logoRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                try {
+                  const { dataUrl } = await fileToDataUrl(file, { maxSize: 320, quality: 0.85 });
+                  setLogoUrl(dataUrl);
+                } catch {
+                  toast("Лого не загрузилось");
+                }
+                e.target.value = "";
+              }}
+            />
+            <div className="flex items-center gap-3">
+              {logoUrl ? (
+                <img src={logoUrl} alt="" className="size-14 rounded-card bg-chip object-contain p-1" />
+              ) : null}
+              <Button type="button" variant="secondary" size="md" onClick={() => logoRef.current?.click()}>
+                {logoUrl ? "Заменить лого" : "Загрузить лого"}
+              </Button>
+              {logoUrl ? (
+                <Button type="button" variant="ghost" size="md" onClick={() => setLogoUrl("")}>
+                  Убрать
+                </Button>
+              ) : null}
+            </div>
+          </Field>
+
+          <Field label="Заметка">
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Необязательно"
+              rows={2}
+            />
+          </Field>
+
+          <div>
+            <input
+              ref={photoRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                try {
+                  const { dataUrl, mime } = await fileToDataUrl(file);
+                  setPhoto({ dataUrl, mime });
+                } catch {
+                  toast("Фото не загрузилось");
+                }
+                e.target.value = "";
+              }}
+            />
+            <Button type="button" variant="secondary" onClick={() => photoRef.current?.click()}>
+              {photo ? "Заменить фото пластика" : "Фото пластика (необяз.)"}
+            </Button>
+            {photo ? (
+              <img src={photo.dataUrl} alt="" className="mt-2 max-h-24 rounded-card object-contain" />
+            ) : null}
+          </div>
+
+          <p className="text-[12px] leading-relaxed text-muted">
+            Сканирование и штрихкод — только на устройстве. Номер видите вы и партнёр в приложении.
+          </p>
+          <Button type="submit">Сохранить карту</Button>
+        </form>
+      </Sheet>
+
+      <BarcodeScannerSheet open={scanOpen} onOpenChange={setScanOpen} onDetected={applyScan} />
+    </>
   );
 }
 
@@ -540,6 +581,7 @@ function DocEditSheet({
     notes: string;
     codeValue: string;
     codeFormat: CardCodeFormat | "";
+    logoUrl: string;
   }) => void;
   onDelete: () => void;
 }) {
@@ -547,6 +589,9 @@ function DocEditSheet({
   const [notes, setNotes] = useState("");
   const [codeValue, setCodeValue] = useState("");
   const [codeFormat, setCodeFormat] = useState<CardCodeFormat>("CODE128");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [scanOpen, setScanOpen] = useState(false);
+  const logoRef = useRef<HTMLInputElement>(null);
   const isCard = item?.kind === "card";
 
   useEffect(() => {
@@ -555,85 +600,135 @@ function DocEditSheet({
     setNotes(item.notes ?? "");
     setCodeValue(item.codeValue ?? "");
     setCodeFormat(normalizeCodeFormat(item.codeFormat) || "CODE128");
+    setLogoUrl(item.logoUrl ?? "");
   }, [open, item]);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange} title={isCard ? "Карта" : "Документ"}>
-      <form
-        className="flex flex-col gap-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          const code = sanitizeCodeValue(codeValue);
-          onSave({
-            title: title.trim() || (isCard ? "Карта" : "Документ"),
-            notes: notes.trim(),
-            codeValue: isCard ? code : "",
-            codeFormat: isCard && code ? codeFormat : "",
-          });
-        }}
-      >
-        {item?.mime.startsWith("image/") && item.dataUrl ? (
-          <div className="overflow-hidden rounded-card bg-chip">
-            <img src={item.dataUrl} alt="" className="mx-auto max-h-36 object-contain" />
-          </div>
-        ) : null}
-        <Field label={isCard ? "Название карты" : "Название"}>
-          <Input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={isCard ? "Пятёрочка, Лента…" : "Билет, страховка…"}
-            autoFocus
-            required
-            autoComplete="off"
-          />
-        </Field>
-        {isCard ? (
-          <>
-            <Field label="Номер для штрихкода">
-              <Input
-                value={codeValue}
-                onChange={(e) => setCodeValue(e.target.value)}
-                placeholder="Пусто = только фото"
-                autoComplete="off"
-                autoCorrect="off"
-                spellCheck={false}
-              />
-            </Field>
-            {codeValue.trim() ? (
-              <Field label="Формат кода">
-                <div className="flex flex-wrap gap-1.5">
-                  {CARD_CODE_FORMATS.map((f) => (
-                    <button
-                      key={f.id}
-                      type="button"
-                      onClick={() => setCodeFormat(f.id)}
-                      className={cn(
-                        "h-9 rounded-full px-3 text-[13px] font-semibold",
-                        codeFormat === f.id ? "bg-ink text-on-ink" : "bg-chip text-ink-soft",
-                      )}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange} title={isCard ? "Карта" : "Документ"}>
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const code = sanitizeCodeValue(codeValue);
+            onSave({
+              title: title.trim() || (isCard ? "Карта" : "Документ"),
+              notes: notes.trim(),
+              codeValue: isCard ? code : "",
+              codeFormat: isCard && code ? codeFormat : "",
+              logoUrl: isCard ? logoUrl : "",
+            });
+          }}
+        >
+          {item?.mime.startsWith("image/") && item.dataUrl ? (
+            <div className="overflow-hidden rounded-card bg-chip">
+              <img src={item.dataUrl} alt="" className="mx-auto max-h-36 object-contain" />
+            </div>
+          ) : null}
+          <Field label={isCard ? "Название карты" : "Название"}>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={isCard ? "Пятёрочка, Лента…" : "Билет…"}
+              autoFocus
+              required
+              autoComplete="off"
+            />
+          </Field>
+          {isCard ? (
+            <>
+              <Button type="button" variant="secondary" onClick={() => setScanOpen(true)}>
+                <ScanLine className="size-4" />
+                Сканировать код
+              </Button>
+              <Field label="Номер для штрихкода">
+                <Input
+                  value={codeValue}
+                  onChange={(e) => setCodeValue(e.target.value)}
+                  placeholder="Пусто = только фото"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                />
+              </Field>
+              {codeValue.trim() ? (
+                <Field label="Формат кода">
+                  <div className="flex flex-wrap gap-1.5">
+                    {CARD_CODE_FORMATS.map((f) => (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => setCodeFormat(f.id)}
+                        className={cn(
+                          "h-9 rounded-full px-3 text-[13px] font-semibold",
+                          codeFormat === f.id ? "bg-ink text-on-ink" : "bg-chip text-ink-soft",
+                        )}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                </Field>
+              ) : null}
+              <Field label="Логотип">
+                <input
+                  ref={logoRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      const { dataUrl } = await fileToDataUrl(file, { maxSize: 320, quality: 0.85 });
+                      setLogoUrl(dataUrl);
+                    } catch {
+                      toast("Лого не загрузилось");
+                    }
+                    e.target.value = "";
+                  }}
+                />
+                <div className="flex items-center gap-3">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="" className="size-14 rounded-card bg-chip object-contain p-1" />
+                  ) : null}
+                  <Button type="button" variant="secondary" size="md" onClick={() => logoRef.current?.click()}>
+                    {logoUrl ? "Заменить" : "Загрузить"}
+                  </Button>
+                  {logoUrl ? (
+                    <Button type="button" variant="ghost" size="md" onClick={() => setLogoUrl("")}>
+                      Убрать
+                    </Button>
+                  ) : null}
                 </div>
               </Field>
-            ) : null}
-          </>
-        ) : null}
-        <Field label="Заметка">
-          <Textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Необязательно"
-            rows={2}
-          />
-        </Field>
-        <Button type="submit">Сохранить</Button>
-        <Button variant="ghost" onClick={onDelete}>
-          Удалить
-        </Button>
-      </form>
-    </Sheet>
+            </>
+          ) : null}
+          <Field label="Заметка">
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Необязательно"
+              rows={2}
+            />
+          </Field>
+          <Button type="submit">Сохранить</Button>
+          <Button variant="ghost" onClick={onDelete}>
+            Удалить
+          </Button>
+        </form>
+      </Sheet>
+      {isCard ? (
+        <BarcodeScannerSheet
+          open={scanOpen}
+          onOpenChange={setScanOpen}
+          onDetected={(r) => {
+            setCodeValue(r.value);
+            setCodeFormat(r.format);
+          }}
+        />
+      ) : null}
+    </>
   );
 }
 
