@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { toast } from "sonner";
 import { normalizeCodeFormat, sanitizeCodeValue } from "./card-code";
+import { isGuestMode } from "./guest";
 import { advanceDueDate, normalizeRepeat } from "./task-repeat";
 import type {
   CalEvent,
@@ -21,6 +23,12 @@ import { uid } from "./utils";
 
 export function otherId(id: PartnerId): PartnerId {
   return id === "a" ? "b" : "a";
+}
+
+function blockGuest(): boolean {
+  if (!isGuestMode()) return false;
+  toast("Гостевой режим — только просмотр");
+  return true;
 }
 
 /** Placeholder partners for source / empty install — not real personal data. */
@@ -213,19 +221,27 @@ export const useAppStore = create<AppState>()(
       ],
       expenses: [],
 
-      completeSetup: ({ partners: next, startedAt, currentId }) =>
-        set({ setupComplete: true, partners: next, startedAt, currentId }),
+      completeSetup: ({ partners: next, startedAt, currentId }) => {
+        if (blockGuest()) return;
+        set({ setupComplete: true, partners: next, startedAt, currentId });
+      },
 
       setCurrentId: (id) => set({ currentId: id }),
 
-      updatePartner: (id, patch) =>
+      updatePartner: (id, patch) => {
+        if (blockGuest()) return;
         set((s) => ({
           partners: { ...s.partners, [id]: { ...s.partners[id], ...patch } },
-        })),
+        }));
+      },
 
-      setStartedAt: (date) => set({ startedAt: date }),
+      setStartedAt: (date) => {
+        if (blockGuest()) return;
+        set({ startedAt: date });
+      },
 
-      addTask: (input) =>
+      addTask: (input) => {
+        if (blockGuest()) return;
         set((s) => ({
           tasks: [
             {
@@ -241,14 +257,18 @@ export const useAppStore = create<AppState>()(
             },
             ...s.tasks,
           ],
-        })),
+        }));
+      },
 
-      updateTask: (id, patch) =>
+      updateTask: (id, patch) => {
+        if (blockGuest()) return;
         set((s) => ({
           tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
-        })),
+        }));
+      },
 
-      toggleTask: (id) =>
+      toggleTask: (id) => {
+        if (blockGuest()) return;
         set((s) => ({
           tasks: s.tasks.map((t) => {
             if (t.id !== id) return t;
@@ -267,11 +287,16 @@ export const useAppStore = create<AppState>()(
               doneAt: !t.done ? new Date().toISOString() : null,
             };
           }),
-        })),
+        }));
+      },
 
-      deleteTask: (id) => set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) })),
+      deleteTask: (id) => {
+        if (blockGuest()) return;
+        set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) }));
+      },
 
-      addEvent: (input) =>
+      addEvent: (input) => {
+        if (blockGuest()) return;
         set((s) => ({
           events: [
             {
@@ -282,16 +307,23 @@ export const useAppStore = create<AppState>()(
             },
             ...s.events,
           ],
-        })),
+        }));
+      },
 
-      updateEvent: (id, patch) =>
+      updateEvent: (id, patch) => {
+        if (blockGuest()) return;
         set((s) => ({
           events: s.events.map((e) => (e.id === id ? { ...e, ...patch } : e)),
-        })),
+        }));
+      },
 
-      deleteEvent: (id) => set((s) => ({ events: s.events.filter((e) => e.id !== id) })),
+      deleteEvent: (id) => {
+        if (blockGuest()) return;
+        set((s) => ({ events: s.events.filter((e) => e.id !== id) }));
+      },
 
-      addWish: (input) =>
+      addWish: (input) => {
+        if (blockGuest()) return;
         set((s) => ({
           wishes: [
             {
@@ -306,21 +338,30 @@ export const useAppStore = create<AppState>()(
             },
             ...s.wishes,
           ],
-        })),
+        }));
+      },
 
-      updateWish: (id, patch) =>
+      updateWish: (id, patch) => {
+        if (blockGuest()) return;
         set((s) => ({
           wishes: s.wishes.map((w) => (w.id === id ? { ...w, ...patch } : w)),
-        })),
+        }));
+      },
 
-      toggleWish: (id) =>
+      toggleWish: (id) => {
+        if (blockGuest()) return;
         set((s) => ({
           wishes: s.wishes.map((w) => (w.id === id ? { ...w, done: !w.done } : w)),
-        })),
+        }));
+      },
 
-      deleteWish: (id) => set((s) => ({ wishes: s.wishes.filter((w) => w.id !== id) })),
+      deleteWish: (id) => {
+        if (blockGuest()) return;
+        set((s) => ({ wishes: s.wishes.filter((w) => w.id !== id) }));
+      },
 
-      addPlan: (input) =>
+      addPlan: (input) => {
+        if (blockGuest()) return;
         set((s) => ({
           plans: [
             {
@@ -334,21 +375,30 @@ export const useAppStore = create<AppState>()(
             },
             ...s.plans,
           ],
-        })),
+        }));
+      },
 
-      updatePlan: (id, patch) =>
+      updatePlan: (id, patch) => {
+        if (blockGuest()) return;
         set((s) => ({
           plans: s.plans.map((p) => (p.id === id ? { ...p, ...patch } : p)),
-        })),
+        }));
+      },
 
-      togglePlan: (id) =>
+      togglePlan: (id) => {
+        if (blockGuest()) return;
         set((s) => ({
           plans: s.plans.map((p) => (p.id === id ? { ...p, closed: !p.closed } : p)),
-        })),
+        }));
+      },
 
-      deletePlan: (id) => set((s) => ({ plans: s.plans.filter((p) => p.id !== id) })),
+      deletePlan: (id) => {
+        if (blockGuest()) return;
+        set((s) => ({ plans: s.plans.filter((p) => p.id !== id) }));
+      },
 
       addDoc: (input) => {
+        if (blockGuest()) return "";
         const id = uid();
         const codeValue = sanitizeCodeValue(input.codeValue ?? "");
         const codeFormat = codeValue ? normalizeCodeFormat(input.codeFormat) : "";
@@ -372,7 +422,8 @@ export const useAppStore = create<AppState>()(
         return id;
       },
 
-      updateDoc: (id, patch) =>
+      updateDoc: (id, patch) => {
+        if (blockGuest()) return;
         set((s) => ({
           docs: s.docs.map((d) => {
             if (d.id !== id) return d;
@@ -387,11 +438,16 @@ export const useAppStore = create<AppState>()(
             }
             return next;
           }),
-        })),
+        }));
+      },
 
-      deleteDoc: (id) => set((s) => ({ docs: s.docs.filter((d) => d.id !== id) })),
+      deleteDoc: (id) => {
+        if (blockGuest()) return;
+        set((s) => ({ docs: s.docs.filter((d) => d.id !== id) }));
+      },
 
-      addCapsule: (input) =>
+      addCapsule: (input) => {
+        if (blockGuest()) return;
         set((s) => ({
           capsules: [
             {
@@ -404,11 +460,16 @@ export const useAppStore = create<AppState>()(
             },
             ...s.capsules,
           ],
-        })),
+        }));
+      },
 
-      deleteCapsule: (id) => set((s) => ({ capsules: s.capsules.filter((c) => c.id !== id) })),
+      deleteCapsule: (id) => {
+        if (blockGuest()) return;
+        set((s) => ({ capsules: s.capsules.filter((c) => c.id !== id) }));
+      },
 
-      addVote: (input) =>
+      addVote: (input) => {
+        if (blockGuest()) return;
         set((s) => ({
           votes: [
             {
@@ -421,9 +482,11 @@ export const useAppStore = create<AppState>()(
             },
             ...s.votes,
           ],
-        })),
+        }));
+      },
 
       castVote: (id, optionIndex) => {
+        if (blockGuest()) return;
         const me = get().currentId;
         set((s) => ({
           votes: s.votes.map((v) =>
@@ -432,9 +495,13 @@ export const useAppStore = create<AppState>()(
         }));
       },
 
-      deleteVote: (id) => set((s) => ({ votes: s.votes.filter((v) => v.id !== id) })),
+      deleteVote: (id) => {
+        if (blockGuest()) return;
+        set((s) => ({ votes: s.votes.filter((v) => v.id !== id) }));
+      },
 
-      addExpense: (input) =>
+      addExpense: (input) => {
+        if (blockGuest()) return;
         set((s) => ({
           expenses: [
             {
@@ -450,19 +517,27 @@ export const useAppStore = create<AppState>()(
             },
             ...s.expenses,
           ],
-        })),
+        }));
+      },
 
-      updateExpense: (id, patch) =>
+      updateExpense: (id, patch) => {
+        if (blockGuest()) return;
         set((s) => ({
           expenses: s.expenses.map((e) => (e.id === id ? { ...e, ...patch } : e)),
-        })),
+        }));
+      },
 
-      deleteExpense: (id) => set((s) => ({ expenses: s.expenses.filter((e) => e.id !== id) })),
+      deleteExpense: (id) => {
+        if (blockGuest()) return;
+        set((s) => ({ expenses: s.expenses.filter((e) => e.id !== id) }));
+      },
 
-      settleBalance: () =>
+      settleBalance: () => {
+        if (blockGuest()) return;
         set((s) => ({
           expenses: s.expenses.map((e) => (e.settled ? e : { ...e, settled: true })),
-        })),
+        }));
+      },
     }),
     { name: "dvoe-couple-v1" },
   ),
