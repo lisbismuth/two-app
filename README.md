@@ -27,10 +27,6 @@
 ---
 
 ## Интерфейс
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/d927cc93-e9e3-483b-aa7a-61d83da80834" width="280" style="border-radius: 20px;" alt="Интерфейс приложения Двое">
-</p>
-
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/ee79c460-279a-4599-91d5-7b0ab2697bc3" width="260" alt="Совместные дела и календарь">
