@@ -1,19 +1,9 @@
 /**
- * Polls /api/state (see ./state.server) so both people see the same data
- * without needing to have the app open at the same moment — this is what
- * replaced the earlier P2P-only approach. Same whole-slice "last write
- * wins" trade-off as before, now backed by Postgres instead of an
- * ephemeral WebRTC channel, plus one safety net the P2P version didn't
- * have: a write that would clobber a change it never saw gets rejected
- * and reconciled instead of silently overwriting it (see push() below).
- *
- * Local writes still land in localStorage immediately via zustand's
- * `persist` (unchanged) — this hook only adds a background layer that
- * reads/writes the same slice to the server. Offline: nothing is lost,
- * the next successful poll or the debounced push after the next edit
- * picks it back up.
+ * Polls /api/state so both partners see the same data.
+ * Auth: same-origin cookies + optional live-preview bearer.
  */
 import { useEffect, useRef, useState } from "react";
+import { getBearerToken } from "@/lib/auth/client";
 import { useAppStore } from "@/lib/store";
 
 const POLL_MS = 8000;
@@ -32,7 +22,6 @@ const SYNCED_KEYS = [
   "startedAt",
 ] as const satisfies readonly (keyof ReturnType<typeof useAppStore.getState>)[];
 
-/** Array fields that older server snapshots may omit. */
 const ARRAY_DEFAULTS = [
   "tasks",
   "events",
@@ -61,20 +50,53 @@ function pickSyncedSlice(state: FullState): SyncedSlice {
   return out;
 }
 
+function normalizeDoc(raw: unknown): Record<string, unknown> {
+  const d = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  return {
+    ...d,
+    notes: typeof d.notes === "string" ? d.notes : "",
+    mime: typeof d.mime === "string" ? d.mime : "",
+    dataUrl: typeof d.dataUrl === "string" ? d.dataUrl : "",
+    logoUrl: typeof d.logoUrl === "string" ? d.logoUrl : "",
+    codeValue: typeof d.codeValue === "string" ? d.codeValue : "",
+    codeFormat: typeof d.codeFormat === "string" ? d.codeFormat : "",
+  };
+}
+
 function normalizeRemote(data: SyncedSlice): SyncedSlice {
   const next = { ...data } as SyncedSlice & Record<string, unknown>;
   for (const key of ARRAY_DEFAULTS) {
     if (!Array.isArray(next[key])) next[key] = [];
   }
+  if (Array.isArray(next.docs)) {
+    next.docs = next.docs.map(normalizeDoc) as typeof next.docs;
+  }
+  if (Array.isArray(next.tasks)) {
+    next.tasks = next.tasks.map((t) => {
+      const row = t as Record<string, unknown>;
+      return {
+        ...row,
+        repeat: typeof row.repeat === "string" ? row.repeat : "none",
+      };
+    }) as typeof next.tasks;
+  }
   return next;
 }
 
-/**
- * Call once, near the app root, after local persisted state has hydrated
- * (mirrors the earlier useP2PSync gating — see git history if you need the
- * P2P version back). No-op until setup is complete, so we never push an
- * empty pre-setup snapshot over real data already on the server.
- */
+function stateFetchInit(init: RequestInit = {}): RequestInit {
+  const headers = new Headers(init.headers);
+  if (!headers.has("content-type") && init.method === "PUT") {
+    headers.set("content-type", "application/json");
+  }
+  const token = getBearerToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  return {
+    ...init,
+    credentials: "include",
+    headers,
+  };
+}
+
 export function useServerSync(): void {
   const setupComplete = useAppStore((s) => s.setupComplete);
   const [hydrated, setHydrated] = useState(false);
@@ -106,27 +128,26 @@ export function useServerSync(): void {
       const updatedAt = Date.now();
       const state = pickSyncedSlice(useAppStore.getState());
       try {
-        const res = await fetch("/api/state", {
-          method: "PUT",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            data: state,
-            updatedAt,
-            expectedUpdatedAt: seed ? null : lastKnownUpdatedAt.current,
+        const res = await fetch(
+          "/api/state",
+          stateFetchInit({
+            method: "PUT",
+            body: JSON.stringify({
+              data: state,
+              updatedAt,
+              expectedUpdatedAt: seed ? null : lastKnownUpdatedAt.current,
+            }),
           }),
-        });
+        );
+        if (res.status === 401) return;
         const responseBody = (await res.json()) as StateResponse;
         if (res.status === 409 && responseBody.data) {
-          // The partner wrote in between. For two people this is rare —
-          // adopt their version rather than build real merge logic for it.
           applyRemote(responseBody.data, responseBody.updatedAt);
           return;
         }
         if (res.ok) lastKnownUpdatedAt.current = responseBody.updatedAt;
       } catch {
-        // Offline — the next poll (which re-seeds if the server still has
-        // nothing) or the next debounced push after another local edit
-        // will retry. Nothing is lost locally.
+        /* offline */
       }
     }
 
@@ -134,19 +155,17 @@ export function useServerSync(): void {
       if (pullInFlight.current) return;
       pullInFlight.current = true;
       try {
-        const res = await fetch("/api/state");
-        if (!res.ok || cancelled) return;
+        const res = await fetch("/api/state", stateFetchInit({ method: "GET" }));
+        if (res.status === 401 || !res.ok || cancelled) return;
         const body = (await res.json()) as StateResponse;
         if (body.data === null) {
-          // Nothing on the server yet — this device seeds it.
           await push(true);
           return;
         }
-        if (body.updatedAt === lastKnownUpdatedAt.current) return; // nothing new
+        if (body.updatedAt === lastKnownUpdatedAt.current) return;
         applyRemote(body.data, body.updatedAt);
       } catch {
-        // Offline — local data (already in localStorage) is unaffected;
-        // the next interval tick retries.
+        /* offline */
       } finally {
         pullInFlight.current = false;
       }
@@ -155,9 +174,6 @@ export function useServerSync(): void {
     void pull();
     const interval = setInterval(() => void pull(), POLL_MS);
 
-    // Catch up immediately on reopen, rather than waiting out the poll
-    // interval — this is most of what actually fixes the "must both be
-    // online at once" problem in daily use.
     const onFocus = () => void pull();
     const onVisibility = () => {
       if (document.visibilityState === "visible") void pull();
@@ -166,7 +182,7 @@ export function useServerSync(): void {
     document.addEventListener("visibilitychange", onVisibility);
 
     const unsubscribe = useAppStore.subscribe((state, prevState) => {
-      if (applyingRemote.current) return; // don't echo back what we just received
+      if (applyingRemote.current) return;
       const changed = SYNCED_KEYS.some((key) => state[key] !== prevState[key]);
       if (!changed) return;
       if (pushTimer.current) clearTimeout(pushTimer.current);
