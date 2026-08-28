@@ -29,15 +29,9 @@
 ## Интерфейс
 
 <p align="center">
-  <img src="./screenshots/qa-tasks.png" width="30%" alt="Дела" />
-  <img src="./screenshots/qa-wishes.png" width="30%" alt="Хотелки" />
-  <img src="./screenshots/qa-us.png" width="30%" alt="Мы" />
-</p>
-
-<p align="center">
-  <img src="./screenshots/qa-calendar.png" width="30%" alt="Календарь" />
-  <img src="./screenshots/qa-docs.png" width="30%" alt="Документы" />
-  <img src="./screenshots/qa-vote.png" width="30%" alt="Голосования" />
+  <img src="https://github.com/user-attachments/assets/ee79c460-279a-4599-91d5-7b0ab2697bc3" width="260" alt="Совместные дела и календарь">
+  <img src="https://github.com/user-attachments/assets/16f43fa3-8065-4915-b231-15728c2a7d9f" width="260" alt="Статистика и дни вместе">
+  <img src="https://github.com/user-attachments/assets/50fedaa3-cd06-4432-956f-425a2575e2fc" width="260" alt="Список хотелок и планов">
 </p>
 
 ---
