@@ -23,19 +23,20 @@ export function otherId(id: PartnerId): PartnerId {
   return id === "a" ? "b" : "a";
 }
 
+/** Placeholder partners for source / empty install — not real personal data. */
 const partners: Record<PartnerId, Partner> = {
   a: {
     id: "a",
-    name: "Лиза",
+    name: "Аня",
     gender: "female",
-    birthday: "1999-03-12",
+    birthday: "1998-06-15",
     color: "#D4899A",
   },
   b: {
     id: "b",
-    name: "Андрей",
+    name: "Игорь",
     gender: "male",
-    birthday: "1997-07-08",
+    birthday: "1996-11-03",
     color: "#7A9E8A",
   },
 };
@@ -128,7 +129,7 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       setupComplete: true,
       currentId: "a",
-      startedAt: "2022-09-04",
+      startedAt: "2020-01-01",
       partners,
       tasks: [
         {
@@ -193,8 +194,8 @@ export const useAppStore = create<AppState>()(
       capsules: [
         {
           id: "c1",
-          title: "На четвёртую годовщину",
-          body: "Если ты это читаешь — значит, мы всё ещё выбираем друг друга. Спасибо, что ты есть.",
+          title: "На годовщину",
+          body: "Если ты это читаешь — значит, мы всё ещё выбираем друг друга.",
           openAt: "2026-09-04",
           authorId: "a",
           createdAt: now,
