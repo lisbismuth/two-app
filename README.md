@@ -27,6 +27,26 @@
 ---
 
 ## Интерфейс
+<div align="center">
+  <table border="0" style="border: none;">
+    <tr>
+      <td width="60%" valign="middle" align="left">
+        <h3>✨ Что внутри «Двое»:</h3>
+        <ul>
+          <li><b>Совместные дела:</b> общие списки задач и удобный календарь.</li>
+          <li><b>Учёт 50/50:</b> простое деление трат без лишней бухгалтерии.</li>
+          <li><b>Вишлисты:</b> списки желаний и идеи для подарков друг другу.</li>
+          <li><b>Статистика:</b> подсчет дней вместе и памятных дат.</li>
+          <li><b>PWA-формат:</b> работает как нативное приложение на iOS и Android.</li>
+        </ul>
+      </td>
+      <td width="40%" align="center" valign="middle">
+        <img src="https://github.com/user-attachments/assets/d927cc93-e9e3-483b-aa7a-61d83da80834" width="240" alt="Интерфейс приложения Двое">
+      </td>
+    </tr>
+  </table>
+</div>
+
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/ee79c460-279a-4599-91d5-7b0ab2697bc3" width="260" alt="Совместные дела и календарь">
