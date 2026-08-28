@@ -30,8 +30,8 @@
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/ee79c460-279a-4599-91d5-7b0ab2697bc3" width="260" alt="Совместные дела и календарь">
-  <img src="https://github.com/user-attachments/assets/16f43fa3-8065-4915-b231-15728c2a7d9f" width="260" alt="Статистика и дни вместе">
   <img src="https://github.com/user-attachments/assets/50fedaa3-cd06-4432-956f-425a2575e2fc" width="260" alt="Список хотелок и планов">
+  <img src="https://github.com/user-attachments/assets/fd986271-8978-4673-ba20-4ec940a53ba3" width="260" alt="Статистика пары и дни вместе">
 </p>
 
 ---
