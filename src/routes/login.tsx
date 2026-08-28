@@ -8,6 +8,7 @@ import {
   partnerIdFromEmail,
   PARTNER_DISPLAY_NAME,
 } from "@/lib/partners-auth";
+import { buildGuestSnapshot, enterGuestMode, exitGuestMode, isGuestMode } from "@/lib/guest";
 import { useAppStore } from "@/lib/store";
 import { Button, Field, Input } from "@/components/ui";
 
@@ -35,7 +36,18 @@ function LoginPage() {
   }
 
   if (user) {
+    exitGuestMode();
     return <Navigate to="/" />;
+  }
+
+  if (isGuestMode()) {
+    return <Navigate to="/" />;
+  }
+
+  function onGuest() {
+    enterGuestMode();
+    useAppStore.setState(buildGuestSnapshot());
+    window.location.href = "/";
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -53,6 +65,7 @@ function LoginPage() {
 
     setBusy(true);
     try {
+      exitGuestMode();
       if (mode === "signup") {
         const { error: err } = await authClient.signUp.email({
           name: displayName,
@@ -69,7 +82,6 @@ function LoginPage() {
         });
         if (err) throw new Error(err.message ?? "Неверный email или пароль");
       }
-      // Bind in-app partner to this email before navigating.
       setCurrentId(partnerId);
       window.location.href = "/";
     } catch (err) {
@@ -119,6 +131,15 @@ function LoginPage() {
             {busy ? "Секунду…" : mode === "signin" ? "Войти" : "Зарегистрироваться"}
           </Button>
         </form>
+
+        <div className="rise-in rise-in-2 mt-4">
+          <Button type="button" variant="secondary" onClick={onGuest} className="w-full">
+            Войти как гость
+          </Button>
+          <p className="mt-2 text-center text-[12px] text-muted">
+            Только просмотр демо-данных. Изменения недоступны.
+          </p>
+        </div>
 
         <p className="rise-in rise-in-2 mt-6 text-center text-[14px] text-muted">
           {mode === "signin" ? (
