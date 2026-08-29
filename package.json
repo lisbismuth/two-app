@@ -1,6 +1,8 @@
 {
   "name": "app-builder-workspace",
   "private": true,
+  "license": "SEE LICENSE IN LICENSE.md",
+  "author": "lisbismuth",
   "sideEffects": false,
   "type": "module",
   "overrides": {

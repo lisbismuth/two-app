@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="420" height="28" viewBox="0 0 420 28" role="img" aria-label="MIT · React 19 · TypeScript 5.7 · Vite 8">
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="28" viewBox="0 0 420 28" role="img" aria-label="NC · React 19 · TypeScript 5.7 · Vite 8">
   <style>
     .chip { fill: #F3F1EC; }
     .label { fill: #52525b; }
@@ -11,12 +11,12 @@
       .pill-text { fill: #18181b; }
     }
   </style>
-  <!-- license MIT -->
+  <!-- license PolyForm Noncommercial -->
   <g transform="translate(0,0)">
     <rect class="chip" width="78" height="28" rx="8" ry="8"/>
     <text class="label" x="10" y="18" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="12">license</text>
     <rect class="pill" x="52" y="4" width="22" height="20" rx="5" ry="5"/>
-    <text class="pill-text" x="63" y="18" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="11" font-weight="600">MIT</text>
+    <text class="pill-text" x="63" y="18" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="11" font-weight="600">NC</text>
   </g>
   <!-- React 19 -->
   <g transform="translate(90,0)">
