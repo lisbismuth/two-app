@@ -142,6 +142,23 @@ function authPopupPlugin(): Plugin {
   };
 }
 
+/** Inline partner allowlist into the client bundle at build time. */
+function partnerEnvDefines(): Record<string, string> {
+  const pick = (...keys: string[]) => {
+    for (const k of keys) {
+      const v = process.env[k]?.trim();
+      if (v) return JSON.stringify(v);
+    }
+    return JSON.stringify("");
+  };
+  return {
+    __PARTNER_EMAIL_A__: pick("PARTNER_EMAIL_A", "VITE_PARTNER_EMAIL_A"),
+    __PARTNER_EMAIL_B__: pick("PARTNER_EMAIL_B", "VITE_PARTNER_EMAIL_B"),
+    __PARTNER_NAME_A__: pick("PARTNER_NAME_A", "VITE_PARTNER_NAME_A"),
+    __PARTNER_NAME_B__: pick("PARTNER_NAME_B", "VITE_PARTNER_NAME_B"),
+  };
+}
+
 // `0.0.0.0:8080` is the live-preview contract — don't change host/port.
 // The dev server starts once `src/router.tsx` and `src/routes/` exist — see
 // AGENTS.md § "First scaffold".
@@ -157,6 +174,10 @@ export default defineConfig(({ command, isPreview }) => ({
     strictPort: true,
   },
   resolve: { tsconfigPaths: true },
+  // PARTNER_EMAIL_* are not VITE_-prefixed (server secrets pattern), but the
+  // login form must know the allowlist in the browser. Inline at build time
+  // from the same Vercel env the server already uses.
+  define: partnerEnvDefines(),
   plugins: [
     pgliteBootstrapPlugin(),
     // Before tanstackStart so /auth/popup never falls through to the SPA.
