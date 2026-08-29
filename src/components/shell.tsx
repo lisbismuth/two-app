@@ -11,7 +11,7 @@ import { authEnabled } from "@/lib/auth/client";
 import { RedirectToSignIn, UserButton } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { SIGN_IN_PATH } from "@/lib/auth/gates";
-import { partnerIdFromEmail } from "@/lib/partners-auth";
+import { partnerIdFromEmailClient } from "@/lib/partner-email-hash";
 import {
   buildGuestSnapshot,
   exitGuestMode,
@@ -72,10 +72,16 @@ function PartnerFromAuth() {
 
   useEffect(() => {
     if (isGuestMode()) return;
-    const partnerId = partnerIdFromEmail(user?.primaryEmail);
-    if (partnerId && partnerId !== currentId) {
-      setCurrentId(partnerId);
-    }
+    let cancelled = false;
+    partnerIdFromEmailClient(user?.primaryEmail).then((partnerId) => {
+      if (cancelled) return;
+      if (partnerId && partnerId !== currentId) {
+        setCurrentId(partnerId);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [user?.primaryEmail, currentId, setCurrentId]);
 
   return null;

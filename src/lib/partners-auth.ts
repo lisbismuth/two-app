@@ -1,10 +1,20 @@
 import type { PartnerId } from "./types";
+import { normalizeEmail } from "./email-normalize";
 
 /**
- * Partner allowlist and display names.
+ * Partner allowlist and display names — SERVER ONLY.
  *
- * Emails come from server env (Vercel): PARTNER_EMAIL_A, PARTNER_EMAIL_B.
+ * Emails come from Vercel env: PARTNER_EMAIL_A / PARTNER_EMAIL_B.
  * Do not put real emails in git.
+ *
+ * IMPORTANT: this file reads real emails from `process.env` and must only be
+ * imported by server-side code (`auth/server.ts`, `sync/state.server.ts`).
+ * Do NOT import it from route components or anything else that ships to the
+ * browser — the client bundle is public, and process.env is not available
+ * there anyway. For the login form's client-side check, use
+ * `partner-email-hash.ts` instead, which compares SHA-256 hashes inlined
+ * at build time so real addresses never appear in the JS the browser
+ * downloads.
  *
  * Names stay in code in Russian — Vercel env UI is awkward with Cyrillic.
  * Optional overrides: PARTNER_NAME_A, PARTNER_NAME_B (any language).
@@ -34,10 +44,6 @@ export const PARTNER_DISPLAY_NAME: Record<PartnerId, string> = {
   b: env("PARTNER_NAME_B") ?? "Андрей",
 };
 
-export function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
-}
-
 export function isAllowedEmail(email: string): boolean {
   const map = PARTNER_BY_EMAIL;
   if (Object.keys(map).length === 0) {
@@ -51,3 +57,5 @@ export function partnerIdFromEmail(email: string | null | undefined): PartnerId 
   if (!email) return null;
   return PARTNER_BY_EMAIL[normalizeEmail(email)] ?? null;
 }
+
+export { normalizeEmail };

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import type { Plugin } from "vite";
@@ -142,6 +143,38 @@ function authPopupPlugin(): Plugin {
   };
 }
 
+/**
+ * Inline a SHA-256 hash of each partner email into the client bundle at
+ * build time — never the email itself. The client bundle is public (anyone
+ * can view-source a deployed site), so real addresses must never end up
+ * here. The login form only needs to answer "does this typed email match
+ * one of the two partners?", and a hash comparison answers that without
+ * exposing the addresses. See `src/lib/partner-email-hash.ts`.
+ */
+function partnerEnvDefines(): Record<string, string> {
+  const pick = (...keys: string[]) => {
+    for (const k of keys) {
+      const v = process.env[k]?.trim();
+      if (v) return v;
+    }
+    return "";
+  };
+  const hashEmail = (email: string) =>
+    email ? createHash("sha256").update(email.trim().toLowerCase()).digest("hex") : "";
+
+  const emailA = pick("PARTNER_EMAIL_A", "VITE_PARTNER_EMAIL_A");
+  const emailB = pick("PARTNER_EMAIL_B", "VITE_PARTNER_EMAIL_B");
+
+  return {
+    __PARTNER_EMAIL_HASH_A__: JSON.stringify(hashEmail(emailA)),
+    __PARTNER_EMAIL_HASH_B__: JSON.stringify(hashEmail(emailB)),
+    // Names are not secret (already shown throughout the app UI once signed
+    // in), so these stay inlined as plain strings.
+    __PARTNER_NAME_A__: JSON.stringify(pick("PARTNER_NAME_A", "VITE_PARTNER_NAME_A")),
+    __PARTNER_NAME_B__: JSON.stringify(pick("PARTNER_NAME_B", "VITE_PARTNER_NAME_B")),
+  };
+}
+
 // `0.0.0.0:8080` is the live-preview contract — don't change host/port.
 // The dev server starts once `src/router.tsx` and `src/routes/` exist — see
 // AGENTS.md § "First scaffold".
@@ -157,6 +190,11 @@ export default defineConfig(({ command, isPreview }) => ({
     strictPort: true,
   },
   resolve: { tsconfigPaths: true },
+  // PARTNER_EMAIL_* are not VITE_-prefixed (server secrets pattern), but the
+  // login form needs *some* signal in the browser to show an instant error.
+  // Inline SHA-256 hashes of the same Vercel-env emails the server uses —
+  // see partnerEnvDefines() above for why hashes, not raw emails.
+  define: partnerEnvDefines(),
   plugins: [
     pgliteBootstrapPlugin(),
     // Before tanstackStart so /auth/popup never falls through to the SPA.

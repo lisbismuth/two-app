@@ -3,11 +3,11 @@ import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { authClient, authEnabled } from "@/lib/auth/client";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import {
-  isAllowedEmail,
+  isAllowedEmailClient,
   normalizeEmail,
-  partnerIdFromEmail,
+  partnerIdFromEmailClient,
   PARTNER_DISPLAY_NAME,
-} from "@/lib/partners-auth";
+} from "@/lib/partner-email-hash";
 import { buildGuestSnapshot, enterGuestMode, exitGuestMode, isGuestMode } from "@/lib/guest";
 import { useAppStore } from "@/lib/store";
 import { Button, Field, Input } from "@/components/ui";
@@ -55,12 +55,12 @@ function LoginPage() {
     setError(null);
 
     const normalized = normalizeEmail(email);
-    if (!isAllowedEmail(normalized)) {
+    if (!(await isAllowedEmailClient(normalized))) {
       setError("Эта почта не имеет доступа. Только два аккаунта пары.");
       return;
     }
 
-    const partnerId = partnerIdFromEmail(normalized)!;
+    const partnerId = (await partnerIdFromEmailClient(normalized))!;
     const displayName = PARTNER_DISPLAY_NAME[partnerId];
 
     setBusy(true);
