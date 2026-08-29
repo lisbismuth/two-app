@@ -67,6 +67,7 @@
 - **Database:** Postgres (Neon / PGLite) + Kysely (миграции при сборке)
 - **Auth:** Better Auth (email/password + allowlist на 2 адреса)
 - **Client Utils:** `jsbarcode`, `qrcode`, `@zxing/browser` — генерация и считывание штрихкодов локально на устройстве
+- Написано в связке с AI-ассистентами
 
 ---
 
