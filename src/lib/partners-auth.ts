@@ -14,15 +14,47 @@ import { normalizeEmail } from "./email-normalize";
  * there anyway. For the login form's client-side check, use
  * `partner-email-hash.ts` instead, which compares SHA-256 hashes inlined
  * at build time so real addresses never appear in the JS the browser
- * downloads.
+ * downloads. The browser still needs some allowlist signal, so Vite injects
+ * the same partner values at build time via hashed defines from the Vercel
+ * env used by the server.
+
  *
  * Names stay in code in Russian — Vercel env UI is awkward with Cyrillic.
  * Optional overrides: PARTNER_NAME_A, PARTNER_NAME_B (any language).
  */
 
+declare const __PARTNER_EMAIL_A__: string | undefined;
+declare const __PARTNER_EMAIL_B__: string | undefined;
+declare const __PARTNER_NAME_A__: string | undefined;
+declare const __PARTNER_NAME_B__: string | undefined;
+
+function readDefine(value: string | undefined): string | undefined {
+  const v = typeof value === "string" ? value.trim() : "";
+  return v ? v : undefined;
+}
+
 function env(key: string): string | undefined {
-  const value = process.env[key]?.trim();
-  return value ? value : undefined;
+  // 1) Runtime (server / Nitro): real process.env
+  const fromProcess =
+    process.env[key]?.trim() || process.env[`VITE_${key}`]?.trim();
+  if (fromProcess) return fromProcess;
+
+  // 2) Vite client: import.meta.env only exposes VITE_* inlined at build
+  try {
+    const meta = import.meta.env as Record<string, string | undefined>;
+    const fromMeta = meta[key]?.trim() || meta[`VITE_${key}`]?.trim();
+    if (fromMeta) return fromMeta;
+  } catch {
+    /* import.meta unavailable in some CJS paths */
+  }
+
+  // 3) Build-time defines from vite.config (PARTNER_EMAIL_* → client bundle)
+  if (key === "PARTNER_EMAIL_A") return readDefine(__PARTNER_EMAIL_A__);
+  if (key === "PARTNER_EMAIL_B") return readDefine(__PARTNER_EMAIL_B__);
+  if (key === "PARTNER_NAME_A") return readDefine(__PARTNER_NAME_A__);
+  if (key === "PARTNER_NAME_B") return readDefine(__PARTNER_NAME_B__);
+
+  return undefined;
 }
 
 function buildPartnerByEmail(): Record<string, PartnerId> {

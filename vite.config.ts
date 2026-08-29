@@ -149,8 +149,11 @@ function authPopupPlugin(): Plugin {
  * can view-source a deployed site), so real addresses must never end up
  * here. The login form only needs to answer "does this typed email match
  * one of the two partners?", and a hash comparison answers that without
- * exposing the addresses. See `src/lib/partner-email-hash.ts`.
+ * exposing the addresses. The browser still needs a build-time allowlist
+ * signal from the same Vercel env the server uses; see
+ * `src/lib/partner-email-hash.ts` for the check.
  */
+
 function partnerEnvDefines(): Record<string, string> {
   const pick = (...keys: string[]) => {
     for (const k of keys) {
@@ -172,6 +175,7 @@ function partnerEnvDefines(): Record<string, string> {
     // in), so these stay inlined as plain strings.
     __PARTNER_NAME_A__: JSON.stringify(pick("PARTNER_NAME_A", "VITE_PARTNER_NAME_A")),
     __PARTNER_NAME_B__: JSON.stringify(pick("PARTNER_NAME_B", "VITE_PARTNER_NAME_B")),
+
   };
 }
 
@@ -194,6 +198,7 @@ export default defineConfig(({ command, isPreview }) => ({
   // login form needs *some* signal in the browser to show an instant error.
   // Inline SHA-256 hashes of the same Vercel-env emails the server uses —
   // see partnerEnvDefines() above for why hashes, not raw emails.
+
   define: partnerEnvDefines(),
   plugins: [
     pgliteBootstrapPlugin(),
